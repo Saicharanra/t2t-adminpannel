@@ -21,6 +21,7 @@ import { ExportDialog } from "./components/export-dialog";
 import { BulkActionsMenu } from "./components/bulk-actions-menu";
 import { EmptyState } from "@/components/shared/empty-state";
 import { useDebounce } from "@/hooks/use-debounce";
+import { Button } from "@/components/ui/button";
 
 export function UsersContent() {
   const [stats, setStats] = useState({
@@ -143,13 +144,14 @@ export function UsersContent() {
           title="No users yet"
           description="Users will appear here once people start registering on the Trash2Treasure platform."
           action={
-            <button
+            <Button
               onClick={() => setShowAddDialog(true)}
-              className="flex items-center gap-2 rounded-lg bg-[var(--t2t-primary)] px-4 py-2.5 text-sm font-medium text-[var(--t2t-text-inverse)] shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-primary-hover)] transition-colors"
+              variant="default"
+              className="flex items-center gap-2"
             >
               <UserPlus size={16} />
               Add First User
-            </button>
+            </Button>
           }
         />
 
@@ -185,20 +187,22 @@ export function UsersContent() {
               }}
             />
           )}
-          <button
+          <Button
             onClick={() => setShowExportDialog(true)}
-            className="flex items-center gap-2 rounded-lg border border-[var(--t2t-border)] bg-[var(--t2t-surface)] px-3.5 py-2 text-sm font-medium text-[var(--t2t-text)] shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-surface-hover)] transition-colors"
+            variant="outline"
+            className="flex items-center gap-2"
           >
             <Download size={15} />
             Export
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setShowAddDialog(true)}
-            className="flex items-center gap-2 rounded-lg bg-[#14EF10] px-3.5 py-2 text-sm font-medium text-black shadow-[var(--t2t-shadow-xs)] hover:bg-[#10d00d] transition-colors"
+            variant="default"
+            className="flex items-center gap-2"
           >
             <Plus size={15} />
             Add User
-          </button>
+          </Button>
         </div>
       </div>
 

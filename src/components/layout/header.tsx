@@ -1,12 +1,13 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { MagnifyingGlass, Bell, Sun, Moon } from "@phosphor-icons/react";
+import { usePathname, useRouter } from "next/navigation";
+import { MagnifyingGlass, Bell, Sun, Moon, SignOut } from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/providers/sidebar-provider";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { logoutAction } from "@/app/(auth)/actions";
 
 const routeTitles: Record<string, string> = {
   "/": "Dashboard",
@@ -24,6 +25,7 @@ const routeTitles: Record<string, string> = {
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
   const { isCollapsed } = useSidebar();
   const [mounted, setMounted] = useState(false);
@@ -119,6 +121,16 @@ export function Header() {
                 Role: Super
               </p>
             </div>
+            <button
+              onClick={async () => {
+                await logoutAction();
+                router.push("/login");
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded border border-[var(--t2t-border)] text-[var(--t2t-text-secondary)] hover:bg-[var(--t2t-surface-hover)] hover:text-red-400 transition-colors"
+              title="Sign Out"
+            >
+              <SignOut size={14} />
+            </button>
           </div>
         </div>
       </div>

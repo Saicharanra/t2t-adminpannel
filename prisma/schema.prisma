@@ -7,14 +7,21 @@ generator client {
 }
 
 model Admin {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String
-  name      String
-  role      String     @default("Moderator") // Super Admin, Platform Admin, Moderator, Support Agent, Read-only Admin
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  auditLogs AuditLog[]
+  id             String              @id @default(uuid())
+  email          String              @unique
+  password       String
+  name           String
+  role           String              @default("Moderator") // Super Admin, Platform Admin, Moderator, Support Agent
+  isLocked       Boolean             @default(false)
+  lockedUntil    DateTime?
+  loginAttempts  Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  auditLogs      AuditLog[]
+  sessions       AdminSession[]
+  otps           AdminOTP[]
+  loginHistories AdminLoginHistory[]
+  trustedDevices TrustedDevice[]
 }
 
 model User {
@@ -113,15 +120,64 @@ model SupportTicket {
   updatedAt DateTime @default(now()) @updatedAt
 }
 
-model AuditLog {
+model AdminSession {
+  id           String   @id @default(uuid())
+  adminId      String
+  admin        Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  sessionToken String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+}
+
+model AdminOTP {
+  id        String    @id @default(uuid())
+  adminId   String
+  admin     Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  otpHash   String
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int       @default(0)
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+}
+
+model AdminLoginHistory {
   id        String   @id @default(uuid())
   adminId   String
   admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
-  event     String
+  status    String   // SUCCESS, FAILURE, LOCKED
   ipAddress String?
-  device    String?
-  timestamp DateTime @default(now())
+  userAgent String?
   createdAt DateTime @default(now())
+}
+
+model TrustedDevice {
+  id          String   @id @default(uuid())
+  adminId     String
+  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  deviceToken String   @unique
+  deviceName  String?
+  expiresAt   DateTime
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String?
+  adminId        String?
+  admin          Admin?   @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  event          String   // LOGIN_SUCCESS, LOGIN_FAILURE, OTP_SENT, OTP_VERIFIED, OTP_FAILED, PASSWORD_CHANGED, LOGOUT
+  ipAddress      String?
+  device         String?
+  browser        String?
+  os             String?
+  timestamp      DateTime @default(now())
+  createdAt      DateTime @default(now())
 }
 
 model Notification {
@@ -131,4 +187,17 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+}
+
+model OTPCode {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  attempts  Int      @default(0)
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, code])
+  @@map("otp_codes")
 }

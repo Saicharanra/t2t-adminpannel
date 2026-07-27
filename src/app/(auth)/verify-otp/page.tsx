@@ -2,8 +2,12 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Leaf, CircleNotch, ArrowClockwise, CheckCircle } from "@phosphor-icons/react";
+import { Leaf, Loader2, RefreshCw, ArrowLeft, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { verifyAdminOtpAction, requestAdminOtpAction } from "../actions";
+import { maskEmail } from "@/lib/auth-crypto";
+import { motion } from "framer-motion";
+import Link from "next/link";
 
 function VerifyOtpContent() {
   const router = useRouter();
@@ -12,38 +16,46 @@ function VerifyOtpContent() {
 
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(300); // 5 minutes in seconds
+  const [timer, setTimer] = useState(300); // 5 minutes
+  const [resendCooldown, setResendCooldown] = useState(30); // 30 seconds resend cooldown
+  const [trustDevice, setTrustDevice] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
   const [attempts, setAttempts] = useState(0);
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // 5-minute expiry countdown timer
   useEffect(() => {
+    if (timer <= 0) return;
     const interval = setInterval(() => {
-      setTimer((prev) => (prev > 0 ? prev - 1 : 0));
+      setTimer((prev) => prev - 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [timer]);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  // 30-second resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
 
-  const handleChange = (element: HTMLInputElement, index: number) => {
-    const value = element.value;
-    if (isNaN(Number(value))) return;
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
 
     const newOtp = [...otp];
-    newOtp[index] = value.substring(value.length - 1);
+    newOtp[index] = value.slice(-1);
     setOtp(newOtp);
 
-    // Auto-focus next input
+    // Auto advance
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -51,130 +63,204 @@ function VerifyOtpContent() {
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pasteData = e.clipboardData.getData("text").trim();
-    if (pasteData.length === 6 && !isNaN(Number(pasteData))) {
-      const pasteArray = pasteData.split("");
-      setOtp(pasteArray);
-      inputRefs.current[5]?.focus();
+    const pastedData = e.clipboardData.getData("text").trim().slice(0, 6);
+    if (/^\d+$/.test(pastedData)) {
+      const newOtp = Array(6).fill("");
+      pastedData.split("").forEach((char, idx) => {
+        newOtp[idx] = char;
+      });
+      setOtp(newOtp);
+      inputRefs.current[Math.min(pastedData.length, 5)]?.focus();
     }
+  };
+
+  const triggerShake = () => {
+    setIsShaking(true);
+    setTimeout(() => setIsShaking(false), 500);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpCode = otp.join("");
+
     if (otpCode.length < 6) {
       toast.error("Please enter the complete 6-digit verification code");
+      triggerShake();
       return;
     }
 
     if (timer === 0) {
-      toast.error("Verification code has expired. Please request a new one.");
-      return;
-    }
-
-    if (attempts >= 5) {
-      toast.error("Too many failed attempts. Code locked.");
+      toast.error("Verification code has expired. Please request a new code.");
+      triggerShake();
       return;
     }
 
     setLoading(true);
     try {
-      // Mock code logic
-      if (otpCode === "123456") {
-        toast.success("Security verification successful!");
-        // Set secure session cookie
-        document.cookie = "t2t_session=authenticated-session-token; path=/; max-age=28800; SameSite=Lax";
+      const res = await verifyAdminOtpAction(email, otpCode, trustDevice);
+      if (res.success) {
+        toast.success("Authentication verified cleanly!");
         router.push("/");
       } else {
-        const newAttempts = attempts + 1;
-        setAttempts(newAttempts);
-        if (newAttempts >= 5) {
-          toast.error("Maximum attempts reached. Please request a new OTP.");
-        } else {
-          toast.error(`Invalid verification code. ${5 - newAttempts} attempts remaining.`);
-        }
+        triggerShake();
+        setAttempts((prev) => prev + 1);
+        toast.error(res.error || "Invalid verification code.");
       }
     } catch (error) {
+      triggerShake();
       toast.error("An error occurred during verification");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
+    if (resendCooldown > 0) return;
+
     setOtp(Array(6).fill(""));
     setTimer(300);
-    setAttempts(0);
-    toast.success("New verification code sent to your email!");
+    setResendCooldown(30);
+
+    const res = await requestAdminOtpAction(email);
+    if (res.success) {
+      toast.success(res.message || "New 6-digit code sent to your email!");
+    } else {
+      toast.error(res.error || "Failed to resend verification code.");
+    }
+  };
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center sm:text-left space-y-2">
-        <div className="flex justify-center sm:justify-start">
-          <div className="flex h-9 w-9 items-center justify-center rounded bg-[#111111] border border-[#222222] text-white">
-            <Leaf size={18} weight="bold" />
+    <motion.div
+      animate={isShaking ? { x: [-10, 10, -10, 10, 0] } : {}}
+      transition={{ duration: 0.4 }}
+      className="w-full rounded-2xl border border-[#E5E7EB] bg-white p-8 sm:p-10 shadow-sm"
+    >
+      {/* Top Branding Header */}
+      <div className="flex flex-col items-center text-center">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#4F772D] text-white shadow-xs">
+            <Leaf size={24} className="fill-current" />
+          </div>
+          <div className="text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-[18px] font-bold tracking-tight text-[#111827]">
+                T2T Admin
+              </span>
+              <span className="flex items-center gap-1 rounded-full bg-[#F4F7F2] border border-[#A3B18A]/30 px-2 py-0.5 text-[10px] font-semibold text-[#4F772D] uppercase tracking-wider">
+                <ShieldCheck size={12} />
+                Security OTP
+              </span>
+            </div>
+            <p className="text-[12px] font-medium text-[#6B7280]">
+              Two-Factor Authentication
+            </p>
           </div>
         </div>
-        <h2 className="text-[24px] font-bold tracking-tight text-white">
-          Verify code
-        </h2>
-        <p className="text-[13px] text-neutral-500 leading-relaxed">
-          We sent a 6-digit security code to <strong className="text-neutral-300">{email}</strong>. It will expire in {formatTime(timer)}.
-        </p>
+
+        <div className="mt-8 space-y-1">
+          <h1 className="text-[26px] font-bold tracking-tight text-[#111827]">
+            Verify your email
+          </h1>
+          <p className="text-[14px] text-[#6B7280] leading-relaxed">
+            We've sent a secure 6-digit verification code to{" "}
+            <span className="font-semibold text-[#111827]">{maskEmail(email)}</span>
+          </p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex justify-between gap-2">
-          {otp.map((digit, index) => (
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+        {/* Six Digit OTP Input Array */}
+        <div className="flex items-center justify-center gap-2 sm:gap-3">
+          {otp.map((digit, idx) => (
             <input
-              key={index}
+              key={idx}
+              ref={(el) => {
+                inputRefs.current[idx] = el;
+              }}
               type="text"
-              pattern="[0-9]*"
               inputMode="numeric"
               maxLength={1}
-              ref={(el) => {
-                inputRefs.current[index] = el;
-              }}
               value={digit}
-              onChange={(e) => handleChange(e.target, index)}
-              onKeyDown={(e) => handleKeyDown(e, index)}
-              onPaste={handlePaste}
-              className="h-10 w-10 text-center text-lg font-bold rounded border border-[#1a1a1a] bg-[#0a0a0a] text-white focus:border-[#14EF10] focus:outline-none transition-all"
+              onChange={(e) => handleOtpChange(idx, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(idx, e)}
+              onPaste={idx === 0 ? handlePaste : undefined}
+              className="h-14 w-12 sm:w-14 rounded-xl border border-[#E5E7EB] bg-white text-center text-[22px] font-bold text-[#111827] focus:border-[#4F772D] focus:outline-none focus:ring-2 focus:ring-[#4F772D]/20 transition-all shadow-2xs"
             />
           ))}
         </div>
 
-        <div className="flex items-center justify-between text-[12px]">
-          <span className="text-neutral-500">
-            Didn&apos;t receive it?
+        {/* Live Timer Countdown */}
+        <div className="flex items-center justify-between text-[13px] border-y border-[#F3F4F6] py-3 text-[#6B7280]">
+          <span>Code Expiry Status:</span>
+          {timer > 0 ? (
+            <span className="font-semibold text-[#4F772D]">
+              Expires in {formatTimer(timer)}
+            </span>
+          ) : (
+            <span className="font-semibold text-red-600">Code expired</span>
+          )}
+        </div>
+
+        {/* Trust Device Checkbox */}
+        <label className="flex items-center gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={trustDevice}
+            onChange={(e) => setTrustDevice(e.target.checked)}
+            className="h-4 w-4 rounded border-[#D1D5DB] text-[#4F772D] focus:ring-[#4F772D]"
+          />
+          <span className="text-[13px] font-medium text-[#374151]">
+            Trust this device for 30 days
           </span>
+        </label>
+
+        {/* Primary Action Button */}
+        <button
+          type="submit"
+          disabled={loading || otp.join("").length < 6}
+          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#4F772D] px-4 text-[15px] font-semibold text-white shadow-xs hover:bg-[#5A8533] active:bg-[#436625] disabled:opacity-60 transition-colors cursor-pointer"
+        >
+          {loading ? (
+            <>
+              <Loader2 size={18} className="animate-spin text-white" />
+              <span>Verifying Code...</span>
+            </>
+          ) : (
+            <span>Verify & Sign In</span>
+          )}
+        </button>
+
+        {/* Footer Actions */}
+        <div className="flex items-center justify-between pt-2 text-[13px]">
+          <Link
+            href="/login"
+            className="flex items-center gap-1.5 font-medium text-[#6B7280] hover:text-[#111827] transition-colors"
+          >
+            <ArrowLeft size={14} />
+            <span>Use another account</span>
+          </Link>
+
           <button
             type="button"
             onClick={handleResend}
-            className="flex items-center gap-1 font-semibold text-[#14EF10] hover:text-[#10d00d] hover:underline"
+            disabled={resendCooldown > 0}
+            className="flex items-center gap-1.5 font-medium text-[#4F772D] hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer"
           >
-            <ArrowClockwise size={12} />
-            Resend Code
+            <RefreshCw size={13} className={resendCooldown > 0 ? "animate-spin" : ""} />
+            <span>
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}
+            </span>
           </button>
         </div>
-
-        <button
-          type="submit"
-          disabled={loading || attempts >= 5}
-          className="flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[#fefefe] text-xs font-semibold text-black shadow-sm hover:bg-[#e5e5e5] transition-colors disabled:opacity-50"
-        >
-          {loading ? (
-            <CircleNotch size={14} className="animate-spin text-black" />
-          ) : (
-            <>
-              Verify and login
-              <CheckCircle size={14} />
-            </>
-          )}
-        </button>
       </form>
-    </div>
+    </motion.div>
   );
 }
 
@@ -182,8 +268,8 @@ export default function VerifyOtpPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex flex-col items-center justify-center p-12">
-          <CircleNotch size={24} className="animate-spin text-[#14EF10]" />
+        <div className="w-full rounded-2xl border border-[#E5E7EB] bg-white p-12 text-center text-[#6B7280]">
+          Loading verification portal...
         </div>
       }
     >

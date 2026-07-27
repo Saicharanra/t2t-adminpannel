@@ -1,21 +1,20 @@
-"use client";
-
 import { Package, Plus, MapPin } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Button } from "@/components/ui/button";
 
 export default function BinsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Bin Management" description="Monitor and manage smart waste collection bins">
-        <button className="flex items-center gap-2 rounded-lg border border-[var(--t2t-border)] bg-[var(--t2t-surface)] px-3.5 py-2 text-sm font-medium text-[var(--t2t-text)] shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-bg)] transition-colors">
+        <Button variant="outline" className="flex items-center gap-2">
           <MapPin size={15} />
           Map View
-        </button>
-        <button className="flex items-center gap-2 rounded-lg bg-[var(--t2t-primary)] px-3.5 py-2 text-sm font-medium text-white shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-primary-hover)] transition-colors">
+        </Button>
+        <Button variant="default" className="flex items-center gap-2">
           <Plus size={15} />
           Add Bin
-        </button>
+        </Button>
       </PageHeader>
 
       {/* Status Overview */}
@@ -59,10 +58,10 @@ export default function BinsPage() {
         title="No bins configured"
         description="Add smart waste collection bins to start monitoring capacity and collection schedules."
         action={
-          <button className="flex items-center gap-2 rounded-lg bg-[var(--t2t-primary)] px-4 py-2.5 text-sm font-medium text-white shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-primary-hover)] transition-colors">
+          <Button variant="default" className="flex items-center gap-2">
             <Plus size={15} />
             Add First Bin
-          </button>
+          </Button>
         }
       />
     </div>

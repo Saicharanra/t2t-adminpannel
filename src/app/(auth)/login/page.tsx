@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
-import { Leaf, Lock, EnvelopeSimple, CircleNotch, ArrowRight } from "@phosphor-icons/react";
+import { Leaf, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { requestAdminOtpAction } from "../actions";
+import Link from "next/link";
 
 const loginSchema = zod.object({
-  email: zod.string().email("Invalid email address"),
-  password: zod.string().min(8, "Password must be at least 8 characters"),
+  email: zod.string().email("Please enter a valid administrator email address"),
+  password: zod.string().min(6, "Password must be at least 6 characters"),
+  rememberDevice: zod.boolean().optional(),
 });
 
 type LoginFormValues = zod.infer<typeof loginSchema>;
@@ -18,6 +21,8 @@ type LoginFormValues = zod.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const passwordInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
     register,
@@ -25,18 +30,27 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "admin@t2t.com",
+      password: "Password123!",
+      rememberDevice: true,
+    },
   });
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
-      // Mock logic for demo/verification flow
-      if (data.email === "admin@t2t.com" && data.password === "Password123!") {
-        toast.success("Credentials validated! Redirecting to OTP verification...");
-        // Redirect to verification code page with email parameter
-        router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
+      const res = await requestAdminOtpAction(data.email, data.password);
+      if (res.success) {
+        if (res.bypassOtp) {
+          toast.success("Welcome back! Signed in with trusted device.");
+          router.push("/");
+        } else {
+          toast.success(res.message || "Verification code sent to your email!");
+          router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
+        }
       } else {
-        toast.error("Invalid administrator credentials");
+        toast.error(res.error || "Invalid administrator credentials");
       }
     } catch (error) {
       toast.error("An error occurred during authentication");
@@ -45,87 +59,145 @@ export default function LoginPage() {
     }
   };
 
+  const togglePasswordVisibility = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault();
+    setShowPassword((prev) => !prev);
+    // Keep focus after toggle
+    setTimeout(() => {
+      passwordInputRef.current?.focus();
+    }, 0);
+  };
+
+  const { ref: passwordRef, ...passwordRegister } = register("password");
+
   return (
-    <div className="space-y-6">
-      <div className="text-center sm:text-left space-y-2">
-        <div className="flex justify-center sm:justify-start">
-          <div className="flex h-9 w-9 items-center justify-center rounded bg-[#111111] border border-[#222222] text-white">
-            <Leaf size={18} weight="bold" />
+    <div className="w-full rounded-2xl border border-[#E5E7EB] bg-white p-8 shadow-sm">
+      {/* Top Header & Branding */}
+      <div className="flex flex-col items-center text-center">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#4F772D] text-white shadow-xs">
+            <Leaf size={24} className="fill-current" />
+          </div>
+          <div className="text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-[18px] font-bold tracking-tight text-[#111827]">
+                T2T Admin
+              </span>
+              <span className="flex items-center gap-1 rounded-full bg-[#F4F7F2] border border-[#A3B18A]/30 px-2 py-0.5 text-[10px] font-semibold text-[#4F772D] uppercase tracking-wider">
+                <ShieldCheck size={12} />
+                Operations Center
+              </span>
+            </div>
+            <p className="text-[12px] font-medium text-[#6B7280]">
+              Trash2Treasure Ecosystem
+            </p>
           </div>
         </div>
-        <h2 className="text-[24px] font-bold tracking-tight text-white">
-          Welcome back
-        </h2>
-        <p className="text-[13px] text-neutral-500">
-          Sign in to the Trash2Treasure administration center
-        </p>
+
+        <div className="mt-8 space-y-1">
+          <h1 className="text-[26px] font-bold tracking-tight text-[#111827]">
+            Sign in to Admin
+          </h1>
+          <p className="text-[14px] text-[#6B7280]">
+            Access the Trash2Treasure Administration Portal
+          </p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Email */}
+      {/* Form */}
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
+        {/* Email Field */}
         <div className="space-y-1.5">
-          <label className="text-[12px] font-semibold text-neutral-300">
-            Email Address
+          <label className="text-[13px] font-semibold text-[#374151]">
+            Admin Email Address
           </label>
-          <div className="relative">
-            <EnvelopeSimple
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
-            />
-            <input
-              type="email"
-              {...register("email")}
-              className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-white focus:outline-none transition-all"
-              placeholder="name@t2t.com"
-            />
-          </div>
+          <input
+            {...register("email")}
+            type="email"
+            placeholder="admin@t2t.com"
+            className="h-[52px] w-full rounded-[12px] border border-[#E5E7EB] bg-white px-4 text-[14px] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#4F772D] focus:outline-none focus:ring-1 focus:ring-[#4F772D] transition-colors"
+          />
           {errors.email && (
-            <p className="text-[11px] text-red-500">{errors.email.message}</p>
+            <p className="text-[12px] font-medium text-red-500">{errors.email.message}</p>
           )}
         </div>
 
-        {/* Password */}
+        {/* Password Field with Eye/EyeOff Toggle */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-[12px] font-semibold text-neutral-300">
+            <label className="text-[13px] font-semibold text-[#374151]">
               Password
             </label>
-            <a
+            <Link
               href="/forgot-password"
-              className="text-[12px] font-medium text-[#14EF10] hover:text-[#10d00d] hover:underline"
+              className="text-[12px] font-medium text-[#4F772D] hover:underline"
             >
-              Forgot password?
-            </a>
+              Forgot Password?
+            </Link>
           </div>
-          <div className="relative">
-            <Lock
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
-            />
+          <div className="relative flex items-center">
             <input
-              type="password"
-              {...register("password")}
-              className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-[#14EF10] focus:outline-none transition-all"
-              placeholder="••••••••"
+              {...passwordRegister}
+              ref={(e) => {
+                passwordRef(e);
+                passwordInputRef.current = e;
+              }}
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••••••"
+              className="h-[52px] w-full rounded-[12px] border border-[#E5E7EB] bg-white pl-4 pr-12 text-[14px] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#4F772D] focus:outline-none focus:ring-1 focus:ring-[#4F772D] transition-colors"
             />
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  togglePasswordVisibility(e);
+                }
+              }}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-2 flex h-[44px] w-[44px] items-center justify-center rounded-lg text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] transition-colors cursor-pointer focus:outline-none"
+            >
+              {showPassword ? (
+                <EyeOff size={18} className="transition-transform duration-150 active:scale-95" />
+              ) : (
+                <Eye size={18} className="transition-transform duration-150 active:scale-95" />
+              )}
+            </button>
           </div>
           {errors.password && (
-            <p className="text-[11px] text-red-500">{errors.password.message}</p>
+            <p className="text-[12px] font-medium text-red-500">{errors.password.message}</p>
           )}
         </div>
 
-        {/* Action Button */}
+        {/* Remember Device */}
+        <div className="flex items-center justify-between pt-1">
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <input
+              {...register("rememberDevice")}
+              type="checkbox"
+              className="h-4 w-4 rounded border-[#D1D5DB] text-[#4F772D] focus:ring-[#4F772D]"
+            />
+            <span className="text-[13px] font-medium text-[#4B5563]">
+              Remember this device
+            </span>
+          </label>
+        </div>
+
+        {/* Submit Action Button */}
         <button
           type="submit"
           disabled={loading}
-          className="flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[#fefefe] text-xs font-semibold text-black shadow-sm hover:bg-[#e5e5e5] transition-colors disabled:opacity-50"
+          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#4F772D] px-4 text-[15px] font-semibold text-white shadow-xs hover:bg-[#5A8533] active:bg-[#436625] disabled:opacity-60 transition-colors cursor-pointer mt-2"
         >
           {loading ? (
-            <CircleNotch size={14} className="animate-spin text-black" />
+            <>
+              <Loader2 size={18} className="animate-spin text-white" />
+              <span>Sending Code...</span>
+            </>
           ) : (
             <>
-              Continue
-              <ArrowRight size={14} />
+              <span>Continue</span>
+              <ArrowRight size={18} />
             </>
           )}
         </button>

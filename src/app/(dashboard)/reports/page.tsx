@@ -1,17 +1,16 @@
-"use client";
-
 import { FileText, Download, Calendar } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Button } from "@/components/ui/button";
 
 export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Reports" description="Generate and export platform reports">
-        <button className="flex items-center gap-2 rounded-lg bg-[var(--t2t-primary)] px-3.5 py-2 text-sm font-medium text-white shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-primary-hover)] transition-colors">
+        <Button variant="default" className="flex items-center gap-2">
           <FileText size={15} />
           Generate Report
-        </button>
+        </Button>
       </PageHeader>
 
       {/* Report Types */}

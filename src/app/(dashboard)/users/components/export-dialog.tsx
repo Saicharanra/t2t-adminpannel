@@ -1,9 +1,8 @@
-"use client";
-
 import { X, Download, FileText, FileSpreadsheet, FileType } from "lucide-react";
 import { useState } from "react";
 import { exportUsers, type UserFilters } from "../actions";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface ExportDialogProps {
   open: boolean;
@@ -137,20 +136,24 @@ export function ExportDialog({ open, onClose, filters, totalCount }: ExportDialo
         </div>
 
         <div className="flex items-center justify-end gap-2">
-          <button
+          <Button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg border border-[var(--t2t-border)] bg-[var(--t2t-surface)] text-sm font-medium text-[var(--t2t-text)] hover:bg-[var(--t2t-surface-hover)] transition-colors"
+            variant="outline"
+            size="sm"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleExport}
-            disabled={loading || format !== "csv"}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#14EF10] text-sm font-medium text-black hover:bg-[#10d00d] disabled:opacity-50 transition-colors"
+            disabled={format !== "csv"}
+            loading={loading}
+            variant="default"
+            size="sm"
+            className="flex items-center gap-2"
           >
             <Download size={16} />
-            {loading ? "Exporting..." : "Export"}
-          </button>
+            Export
+          </Button>
         </div>
       </div>
     </div>

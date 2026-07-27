@@ -1,17 +1,16 @@
-"use client";
-
 import { Gift, Plus, Filter } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Button } from "@/components/ui/button";
 
 export default function RewardsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Rewards" description="Manage reward catalog, partners, and redemption requests">
-        <button className="flex items-center gap-2 rounded-lg bg-[var(--t2t-primary)] px-3.5 py-2 text-sm font-medium text-white shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-primary-hover)] transition-colors">
+        <Button variant="default" className="flex items-center gap-2">
           <Plus size={15} />
           Add Reward
-        </button>
+        </Button>
       </PageHeader>
 
       {/* Tabs */}
@@ -55,10 +54,10 @@ export default function RewardsPage() {
         title="No rewards in catalog"
         description="Add rewards like coupons, gift cards, and partner offers to incentivize users."
         action={
-          <button className="flex items-center gap-2 rounded-lg bg-[var(--t2t-primary)] px-4 py-2.5 text-sm font-medium text-white shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-primary-hover)] transition-colors">
+          <Button variant="default" className="flex items-center gap-2">
             <Plus size={15} />
             Create First Reward
-          </button>
+          </Button>
         }
       />
     </div>

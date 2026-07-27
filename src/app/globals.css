@@ -5,7 +5,7 @@
    Black, White & Neon Green Accent
    ─────────────────────────────────────────────── */
 
-:root {
+:root, .dark {
   /* Brand Accents */
   --t2t-primary: #ffffff; /* Primary dashboard accent */
   --t2t-primary-hover: #e5e5e5;
@@ -66,8 +66,8 @@
   --card-foreground: 0 0% 100%;
   --popover: 0 0% 4%;
   --popover-foreground: 0 0% 100%;
-  --primary: 0 0% 100%;
-  --primary-foreground: 0 0% 0%;
+  --primary: 92 45% 32%; /* #4F772D */
+  --primary-foreground: 0 0% 100%; /* #FFFFFF */
   --secondary: 119 93% 51%;
   --secondary-foreground: 0 0% 0%;
   --muted: 0 0% 8%;
@@ -78,7 +78,7 @@
   --destructive-foreground: 0 0% 0%;
   --border: 0 0% 12%;
   --input: 0 0% 12%;
-  --ring: 119 93% 51%;
+  --ring: 92 45% 32%; /* #4F772D */
   --radius: 0.375rem;
 
   --chart-1: 119 93% 51%;
@@ -152,8 +152,8 @@
   --card-foreground: 0 0% 0%;
   --popover: 0 0% 96%;
   --popover-foreground: 0 0% 0%;
-  --primary: 0 0% 0%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 92 45% 32%; /* #4F772D */
+  --primary-foreground: 0 0% 100%; /* #FFFFFF */
   --secondary: 119 93% 51%;
   --secondary-foreground: 0 0% 0%;
   --muted: 0 0% 92%;
@@ -164,7 +164,7 @@
   --destructive-foreground: 0 0% 100%;
   --border: 0 0% 88%;
   --input: 0 0% 88%;
-  --ring: 119 93% 51%;
+  --ring: 92 45% 32%; /* #4F772D */
 
   --chart-1: 119 93% 51%;
   --chart-2: 0 0% 20%;
@@ -193,17 +193,17 @@
   --color-card-foreground: var(--t2t-text);
   --color-popover: var(--t2t-surface);
   --color-popover-foreground: var(--t2t-text);
-  --color-primary: var(--t2t-primary);
-  --color-primary-foreground: var(--t2t-text-inverse);
-  --color-secondary: var(--t2t-bg-secondary);
-  --color-secondary-foreground: var(--t2t-text);
-  --color-muted: var(--t2t-text-muted);
-  --color-muted-foreground: var(--t2t-text-muted);
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
   --color-destructive: var(--t2t-danger);
   --color-destructive-foreground: #FFFFFF;
   --color-border: var(--t2t-border);
   --color-input: var(--t2t-surface);
-  --color-ring: var(--t2t-primary);
+  --color-ring: hsl(var(--ring));
   --radius-sm: var(--t2t-radius-sm);
   --radius-md: var(--t2t-radius);
   --radius-lg: var(--t2t-radius-lg);

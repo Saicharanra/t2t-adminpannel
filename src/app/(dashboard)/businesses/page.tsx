@@ -1,21 +1,20 @@
-"use client";
-
 import { Building2, Plus, Download, Filter } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Button } from "@/components/ui/button";
 
 export default function BusinessesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Businesses" description="Manage business partners and approval workflows">
-        <button className="flex items-center gap-2 rounded-lg border border-[var(--t2t-border)] bg-[var(--t2t-surface)] px-3.5 py-2 text-sm font-medium text-[var(--t2t-text)] shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-bg)] transition-colors">
+        <Button variant="outline" className="flex items-center gap-2">
           <Download size={15} />
           Export
-        </button>
-        <button className="flex items-center gap-2 rounded-lg bg-[var(--t2t-primary)] px-3.5 py-2 text-sm font-medium text-white shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-primary-hover)] transition-colors">
+        </Button>
+        <Button variant="default" className="flex items-center gap-2">
           <Plus size={15} />
           Add Business
-        </button>
+        </Button>
       </PageHeader>
 
       {/* Tabs */}
@@ -59,10 +58,10 @@ export default function BusinessesPage() {
         title="No businesses registered"
         description="Business partners will appear here once they register and submit their applications for approval."
         action={
-          <button className="flex items-center gap-2 rounded-lg bg-[var(--t2t-primary)] px-4 py-2.5 text-sm font-medium text-white shadow-[var(--t2t-shadow-xs)] hover:bg-[var(--t2t-primary-hover)] transition-colors">
+          <Button variant="default" className="flex items-center gap-2">
             <Plus size={15} />
             Register Business
-          </button>
+          </Button>
         }
       />
     </div>

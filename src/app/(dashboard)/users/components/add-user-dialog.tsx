@@ -1,9 +1,8 @@
-"use client";
-
 import { X } from "lucide-react";
 import { useState } from "react";
 import { createUser } from "../actions";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface AddUserDialogProps {
   open: boolean;
@@ -133,20 +132,22 @@ export function AddUserDialog({ open, onClose, onSuccess }: AddUserDialogProps) 
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-4">
-            <button
+            <Button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-[var(--t2t-border)] bg-[var(--t2t-surface)] text-sm font-medium text-[var(--t2t-text)] hover:bg-[var(--t2t-surface-hover)] transition-colors"
+              variant="outline"
+              size="sm"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={loading}
-              className="px-4 py-2 rounded-lg bg-[#14EF10] text-sm font-medium text-black hover:bg-[#10d00d] disabled:opacity-50 transition-colors"
+              loading={loading}
+              variant="default"
+              size="sm"
             >
-              {loading ? "Creating..." : "Create User"}
-            </button>
+              Create User
+            </Button>
           </div>
         </form>
       </div>
