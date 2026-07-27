@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
 
       {submitted ? (
         <div className="rounded border border-[#1a1a1a] bg-[#0a0a0a] p-5 text-center sm:text-left space-y-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5CE65C]/10 text-[#5CE65C] border border-[#5CE65C]/25 mx-auto sm:mx-0">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#14EF10]/10 text-[#14EF10] border border-[#14EF10]/25 mx-auto sm:mx-0">
             <CheckCircle size={18} />
           </div>
           <h3 className="text-[14px] font-semibold text-white">
@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
           </p>
           <button
             onClick={() => router.push("/login")}
-            className="flex items-center gap-1.5 text-[12px] font-semibold text-[#5CE65C] hover:text-[#4cd14c] hover:underline mx-auto sm:mx-0"
+            className="flex items-center gap-1.5 text-[12px] font-semibold text-[#14EF10] hover:text-[#10d00d] hover:underline mx-auto sm:mx-0"
           >
             <ArrowLeft size={14} />
             Back to login
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
               <input
                 type="email"
                 {...register("email")}
-                className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-[#5CE65C] focus:outline-none transition-all"
+                className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-[#14EF10] focus:outline-none transition-all"
                 placeholder="name@t2t.com"
               />
             </div>

@@ -75,7 +75,7 @@ export default function LoginPage() {
             <input
               type="email"
               {...register("email")}
-              className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-[#f38020] focus:outline-none transition-all"
+              className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-white focus:outline-none transition-all"
               placeholder="name@t2t.com"
             />
           </div>
@@ -92,7 +92,7 @@ export default function LoginPage() {
             </label>
             <a
               href="/forgot-password"
-              className="text-[12px] font-medium text-[#5CE65C] hover:text-[#4cd14c] hover:underline"
+              className="text-[12px] font-medium text-[#14EF10] hover:text-[#10d00d] hover:underline"
             >
               Forgot password?
             </a>
@@ -105,7 +105,7 @@ export default function LoginPage() {
             <input
               type="password"
               {...register("password")}
-              className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-[#5CE65C] focus:outline-none transition-all"
+              className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-[#14EF10] focus:outline-none transition-all"
               placeholder="••••••••"
             />
           </div>

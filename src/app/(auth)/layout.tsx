@@ -10,8 +10,8 @@ export default function AuthLayout({
       {/* Left: Branding Panel */}
       <div className="hidden w-[400px] flex-col justify-between bg-black border-r border-[#1a1a1a] p-10 lg:flex">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded bg-[#f38020]">
-            <Leaf size={18} weight="bold" className="text-white" />
+          <div className="flex h-9 w-9 items-center justify-center rounded bg-[#14EF10]">
+            <Leaf size={18} weight="bold" className="text-black" />
           </div>
           <span className="text-lg font-bold text-white tracking-tight">T2T Admin</span>
         </div>

@@ -88,14 +88,14 @@ export function Sidebar() {
       animate={{ width: isCollapsed ? 68 : 240 }}
       transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#1a1a1a]",
-        "bg-black text-[#eaeaea]"
+        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r",
+        "bg-[var(--t2t-sidebar-bg)] text-[var(--t2t-text)] border-[var(--t2t-border)]"
       )}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center justify-between border-b border-[#1a1a1a] px-5">
+      <div className="flex h-14 items-center justify-between border-b border-[var(--t2t-border)] px-5">
         <Link href="/" className="flex items-center gap-2.5 overflow-hidden">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#5CE65C]">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#14EF10]">
             <Leaf size={14} weight="bold" className="text-black" />
           </div>
           <AnimatePresence>
@@ -105,7 +105,7 @@ export function Sidebar() {
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.15 }}
-                className="whitespace-nowrap text-[14px] font-semibold text-white tracking-tight"
+                className="whitespace-nowrap text-[14px] font-semibold text-[var(--t2t-text)] tracking-tight"
               >
                 T2T Admin
               </motion.span>
@@ -133,12 +133,12 @@ export function Sidebar() {
         {navGroups.map((group, groupIndex) => (
           <div key={group.label} className={cn(groupIndex > 0 && "mt-5")}>
             {!isCollapsed && (
-              <p className="mb-2 px-3 text-[10px] font-semibold tracking-wider text-neutral-500">
+              <p className="mb-2 px-3 text-[10px] font-semibold tracking-wider text-[var(--t2t-text-secondary)]">
                 {group.label}
               </p>
             )}
             {isCollapsed && groupIndex > 0 && (
-              <div className="mx-3 mb-2 border-t border-[#1a1a1a]" />
+              <div className="mx-3 mb-2 border-t border-[var(--t2t-border)]" />
             )}
             <ul className="space-y-1">
               {group.items.map((item) => {
@@ -150,13 +150,13 @@ export function Sidebar() {
                       className={cn(
                         "group relative flex items-center gap-3 rounded py-1.5 px-3 text-[13px] font-medium transition-all duration-150",
                         active
-                          ? "bg-[#111111] text-white border border-[#222222]"
-                          : "text-neutral-400 hover:bg-[#0a0a0a] hover:text-white border border-transparent",
+                          ? "bg-[var(--t2t-surface-hover)] text-[var(--t2t-text)] border border-[var(--t2t-border)]"
+                          : "text-[var(--t2t-text-secondary)] hover:bg-[var(--t2t-surface)] hover:text-[var(--t2t-text)] border border-transparent",
                         isCollapsed && "justify-center px-0"
                       )}
                       title={isCollapsed ? item.title : undefined}
                     >
-                      <span className={cn("shrink-0", active ? "text-[#5CE65C]" : "text-neutral-500 group-hover:text-white")}>
+                      <span className={cn("shrink-0", active ? "text-[#14EF10]" : "text-[var(--t2t-text-muted)] group-hover:text-[var(--t2t-text)]")}>
                         {item.icon}
                       </span>
                       {!isCollapsed && (
@@ -180,11 +180,11 @@ export function Sidebar() {
 
       {/* Footer */}
       {!isCollapsed && (
-        <div className="border-t border-[#1a1a1a] px-5 py-3">
-          <p className="text-[10px] font-semibold text-neutral-400">
+        <div className="border-t border-[var(--t2t-border)] px-5 py-3">
+          <p className="text-[10px] font-semibold text-[var(--t2t-text-secondary)]">
             Trash2Treasure Admin
           </p>
-          <p className="text-[9px] text-neutral-600">
+          <p className="text-[9px] text-[var(--t2t-text-muted)]">
             Version 1.0.0
           </p>
         </div>

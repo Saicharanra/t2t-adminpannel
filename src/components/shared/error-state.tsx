@@ -19,11 +19,11 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded border border-red-950/40 bg-red-950/10 px-6 py-12",
+        "flex flex-col items-center justify-center rounded border border-white/10 bg-white/5 px-6 py-12",
         className
       )}
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded bg-red-950/30 text-red-500 border border-red-900/30">
+      <div className="flex h-10 w-10 items-center justify-center rounded bg-white/10 text-white border border-white/30">
         <Warning size={20} />
       </div>
       <h3 className="mt-4 text-[14px] font-semibold text-white">

@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 /* ───────────────────────────────────────────────
-   T2T Admin — Premium Dark Eco-Inspired Design System
-   Primary: #4F772D | Secondary/Gold: #FEFAE0
+   T2T Admin — Premium Dark Design System
+   Black, White & Neon Green Accent
    ─────────────────────────────────────────────── */
 
 :root {
-  /* Brand Accents (Primary White + Secondary Green) */
-  --t2t-primary: #fefefe; /* Primary dashboard accent */
+  /* Brand Accents */
+  --t2t-primary: #ffffff; /* Primary dashboard accent */
   --t2t-primary-hover: #e5e5e5;
-  --t2t-primary-light: rgba(254, 254, 254, 0.12);
-  --t2t-primary-subtle: rgba(254, 254, 254, 0.04);
+  --t2t-primary-light: rgba(255, 255, 255, 0.12);
+  --t2t-primary-subtle: rgba(255, 255, 255, 0.04);
 
-  /* Secondary Accent (Vibrant Green) */
-  --t2t-gold: #5CE65C;
-  --t2t-gold-hover: #4cd14c;
+  /* Secondary Accent (Neon Green) */
+  --t2t-gold: #14EF10;
+  --t2t-gold-hover: #10d00d;
 
   /* Surfaces & Layout (Pure black / dark gray Vercel look) */
   --t2t-bg: #000000;
@@ -25,7 +25,7 @@
   --t2t-topbar-bg: #000000;
   --t2t-border: rgba(255, 255, 255, 0.08); /* Crisp Vercel borders */
   --t2t-border-subtle: rgba(255, 255, 255, 0.04);
-  --t2t-border-focus: #5CE65C;
+  --t2t-border-focus: #14EF10;
 
   /* Text (Precise typography) */
   --t2t-text: #ffffff;
@@ -34,14 +34,14 @@
   --t2t-text-inverse: #000000;
 
   /* Semantic Colors */
-  --t2t-success: #5CE65C;
-  --t2t-success-light: rgba(92, 230, 92, 0.1);
-  --t2t-warning: #f59e0b;
-  --t2t-warning-light: rgba(245, 158, 11, 0.1);
-  --t2t-danger: #ef4444;
-  --t2t-danger-light: rgba(239, 68, 68, 0.1);
-  --t2t-info: #3b82f6;
-  --t2t-info-light: rgba(59, 130, 246, 0.1);
+  --t2t-success: #14EF10;
+  --t2t-success-light: rgba(20, 239, 16, 0.1);
+  --t2t-warning: #cccccc;
+  --t2t-warning-light: rgba(204, 204, 204, 0.1);
+  --t2t-danger: #ffffff;
+  --t2t-danger-light: rgba(255, 255, 255, 0.1);
+  --t2t-info: #14EF10;
+  --t2t-info-light: rgba(20, 239, 16, 0.1);
 
   /* Shadows (Minimal or none, Vercel focuses on borders) */
   --t2t-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -68,23 +68,23 @@
   --popover-foreground: 0 0% 100%;
   --primary: 0 0% 100%;
   --primary-foreground: 0 0% 0%;
-  --secondary: 120 74% 63%;
+  --secondary: 119 93% 51%;
   --secondary-foreground: 0 0% 0%;
   --muted: 0 0% 8%;
   --muted-foreground: 0 0% 60%;
   --accent: 0 0% 12%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
+  --destructive: 0 0% 100%;
+  --destructive-foreground: 0 0% 0%;
   --border: 0 0% 12%;
   --input: 0 0% 12%;
-  --ring: 120 74% 63%;
+  --ring: 119 93% 51%;
   --radius: 0.375rem;
 
-  --chart-1: 120 74% 63%;
+  --chart-1: 119 93% 51%;
   --chart-2: 0 0% 100%;
-  --chart-3: 140 60% 45%;
-  --chart-4: 40 85% 55%;
+  --chart-3: 0 0% 80%;
+  --chart-4: 0 0% 60%;
   --chart-5: 0 0% 70%;
 
   --sidebar-background: 0 0% 2%;
@@ -94,7 +94,92 @@
   --sidebar-accent: 0 0% 8%;
   --sidebar-accent-foreground: 0 0% 100%;
   --sidebar-border: 0 0% 8%;
-  --sidebar-ring: 120 74% 63%;
+  --sidebar-ring: 119 93% 51%;
+}
+
+/* ───────────────────────────────────────────────
+   Light Mode Theme
+   ─────────────────────────────────────────────── */
+
+.light {
+  /* Brand Accents */
+  --t2t-primary: #000000;
+  --t2t-primary-hover: #1a1a1a;
+  --t2t-primary-light: rgba(0, 0, 0, 0.12);
+  --t2t-primary-subtle: rgba(0, 0, 0, 0.04);
+
+  /* Secondary Accent (Neon Green stays the same) */
+  --t2t-gold: #14EF10;
+  --t2t-gold-hover: #10d00d;
+
+  /* Surfaces & Layout (Light theme) */
+  --t2t-bg: #ffffff;
+  --t2t-bg-secondary: #fafafa;
+  --t2t-surface: #f5f5f5;
+  --t2t-surface-hover: #efefef;
+  --t2t-sidebar-bg: #ffffff;
+  --t2t-topbar-bg: #ffffff;
+  --t2t-border: rgba(0, 0, 0, 0.08);
+  --t2t-border-subtle: rgba(0, 0, 0, 0.04);
+  --t2t-border-focus: #14EF10;
+
+  /* Text (Light mode) */
+  --t2t-text: #000000;
+  --t2t-text-secondary: #666666;
+  --t2t-text-muted: #888888;
+  --t2t-text-inverse: #ffffff;
+
+  /* Semantic Colors */
+  --t2t-success: #14EF10;
+  --t2t-success-light: rgba(20, 239, 16, 0.1);
+  --t2t-warning: #666666;
+  --t2t-warning-light: rgba(102, 102, 102, 0.1);
+  --t2t-danger: #000000;
+  --t2t-danger-light: rgba(0, 0, 0, 0.1);
+  --t2t-info: #14EF10;
+  --t2t-info-light: rgba(20, 239, 16, 0.1);
+
+  /* Shadows */
+  --t2t-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --t2t-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --t2t-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --t2t-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+
+  /* shadcn/ui tokens */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 96%;
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 96%;
+  --popover-foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 119 93% 51%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 92%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 0 0% 88%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 0% 0%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 88%;
+  --input: 0 0% 88%;
+  --ring: 119 93% 51%;
+
+  --chart-1: 119 93% 51%;
+  --chart-2: 0 0% 20%;
+  --chart-3: 0 0% 40%;
+  --chart-4: 0 0% 60%;
+  --chart-5: 0 0% 30%;
+
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 0 0% 10%;
+  --sidebar-primary: 0 0% 0%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 92%;
+  --sidebar-accent-foreground: 0 0% 0%;
+  --sidebar-border: 0 0% 92%;
+  --sidebar-ring: 119 93% 51%;
 }
 
 /* ───────────────────────────────────────────────
@@ -173,8 +258,8 @@ body {
 
 /* Selection color */
 ::selection {
-  background-color: var(--t2t-primary-light);
-  color: var(--t2t-gold);
+  background-color: rgba(20, 239, 16, 0.2);
+  color: #14EF10;
 }
 
 /* Typography scale utilities */

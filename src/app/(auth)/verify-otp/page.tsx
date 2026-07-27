@@ -140,7 +140,7 @@ function VerifyOtpContent() {
               onChange={(e) => handleChange(e.target, index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               onPaste={handlePaste}
-              className="h-10 w-10 text-center text-lg font-bold rounded border border-[#1a1a1a] bg-[#0a0a0a] text-white focus:border-[#5CE65C] focus:outline-none transition-all"
+              className="h-10 w-10 text-center text-lg font-bold rounded border border-[#1a1a1a] bg-[#0a0a0a] text-white focus:border-[#14EF10] focus:outline-none transition-all"
             />
           ))}
         </div>
@@ -152,7 +152,7 @@ function VerifyOtpContent() {
           <button
             type="button"
             onClick={handleResend}
-            className="flex items-center gap-1 font-semibold text-[#5CE65C] hover:text-[#4cd14c] hover:underline"
+            className="flex items-center gap-1 font-semibold text-[#14EF10] hover:text-[#10d00d] hover:underline"
           >
             <ArrowClockwise size={12} />
             Resend Code
@@ -183,7 +183,7 @@ export default function VerifyOtpPage() {
     <Suspense
       fallback={
         <div className="flex flex-col items-center justify-center p-12">
-          <CircleNotch size={24} className="animate-spin text-[#5CE65C]" />
+          <CircleNotch size={24} className="animate-spin text-[#14EF10]" />
         </div>
       }
     >

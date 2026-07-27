@@ -11,18 +11,18 @@ export default function DashboardPage() {
       {/* Handcrafted Header section */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[32px] font-bold tracking-tight text-white leading-none">
+          <h1 className="text-[32px] font-bold tracking-tight text-[var(--t2t-text)] leading-none">
             Dashboard
           </h1>
-          <p className="mt-2 text-[14px] text-neutral-500">
+          <p className="mt-2 text-[14px] text-[var(--t2t-text-secondary)]">
             Live overview of the Trash2Treasure ecosystem.
           </p>
         </div>
         {/* Live Badge */}
-        <div className="flex items-center gap-2 rounded border border-[#1a1a1a] bg-[#0a0a0a] px-3.5 py-1 self-start sm:self-center">
+        <div className="flex items-center gap-2 rounded border border-[var(--t2t-border)] bg-[var(--t2t-surface)] px-3.5 py-1 self-start sm:self-center">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10b981] opacity-75"></span>
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#10b981]"></span>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#14EF10] opacity-75"></span>
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#14EF10]"></span>
           </span>
           <span className="text-[11px] font-bold text-neutral-400 tracking-wider uppercase">
             Live Monitoring

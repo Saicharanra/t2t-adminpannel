@@ -25,27 +25,27 @@ export function KpiCard({
       transition={{ duration: 0.25 }}
       whileHover={{ y: -1 }}
       className={cn(
-        "relative rounded border border-[#1a1a1a] bg-[#0a0a0a] p-6 text-white",
+        "relative rounded border border-[var(--t2t-border)] bg-[var(--t2t-surface)] p-6 text-[var(--t2t-text)]",
         "transition-all duration-200 ease-out",
         className
       )}
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1.5">
-          <span className="text-[13px] font-semibold text-neutral-400">{title}</span>
-          <div className="text-[32px] font-bold tracking-tight leading-none text-white">
+          <span className="text-[13px] font-semibold text-[var(--t2t-text-secondary)]">{title}</span>
+          <div className="text-[32px] font-bold tracking-tight leading-none text-[var(--t2t-text)]">
             {value}
           </div>
         </div>
         {icon && (
-          <div className="text-[#5CE65C] shrink-0 opacity-80">
+          <div className="text-[#14EF10] shrink-0 opacity-90">
             {icon}
           </div>
         )}
       </div>
 
       {description && (
-        <div className="mt-3 text-[12px] text-neutral-500">
+        <div className="mt-3 text-[12px] text-[var(--t2t-text-secondary)]">
           {description}
         </div>
       )}

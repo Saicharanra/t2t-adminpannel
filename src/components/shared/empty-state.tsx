@@ -24,17 +24,17 @@ export function EmptyState({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        "flex flex-col items-center justify-center rounded border border-dashed border-[#1a1a1a] bg-transparent px-6 py-12 text-white",
+        "flex flex-col items-center justify-center rounded border border-dashed border-[var(--t2t-border)] bg-transparent px-6 py-12 text-[var(--t2t-text)]",
         className
       )}
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded bg-[#111111] border border-[#222222] text-neutral-400">
+      <div className="flex h-10 w-10 items-center justify-center rounded bg-[var(--t2t-surface)] border border-[var(--t2t-border)] text-[var(--t2t-text-secondary)]">
         {icon}
       </div>
-      <h3 className="mt-4 text-[14px] font-semibold text-white tracking-tight">
+      <h3 className="mt-4 text-[14px] font-semibold text-[var(--t2t-text)] tracking-tight">
         {title}
       </h3>
-      <p className="mt-1.5 max-w-xs text-center text-[12px] text-neutral-500 leading-relaxed">
+      <p className="mt-1.5 max-w-xs text-center text-[12px] text-[var(--t2t-text-secondary)] leading-relaxed">
         {description}
       </p>
       {action && <div className="mt-4">{action}</div>}

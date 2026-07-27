@@ -54,9 +54,9 @@ export function ConfirmationDialog({
               className={cn(
                 "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border",
                 variant === "danger" &&
-                  "bg-red-950/30 text-red-500 border-red-900/30",
+                  "bg-white/10 text-white border-white/30",
                 variant === "warning" &&
-                  "bg-amber-950/30 text-amber-500 border-amber-900/30"
+                  "bg-white/10 text-white border-white/30"
               )}
             >
               <Warning size={18} />
@@ -83,12 +83,12 @@ export function ConfirmationDialog({
             onClick={handleConfirm}
             disabled={loading}
             className={cn(
-              "rounded px-3.5 py-1.5 text-[12px] font-medium text-white transition-colors disabled:opacity-50",
+              "rounded px-3.5 py-1.5 text-[12px] font-medium text-black transition-colors disabled:opacity-50",
               variant === "danger"
-                ? "bg-red-600 hover:bg-red-700"
+                ? "bg-white hover:bg-neutral-200"
                 : variant === "warning"
-                  ? "bg-amber-500 hover:bg-amber-600"
-                  : "bg-[#f38020] hover:bg-[#ea580c]"
+                  ? "bg-white hover:bg-neutral-200"
+                  : "bg-white hover:bg-neutral-200"
             )}
           >
             {loading ? "Processing…" : confirmLabel}

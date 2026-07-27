@@ -7,14 +7,14 @@ export function DashboardCharts() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {/* 1. Collection Trends */}
-      <div className="rounded border border-[#1a1a1a] bg-[#0a0a0a] p-6 text-white transition-all duration-200">
+      <div className="rounded border border-[var(--t2t-border)] bg-[var(--t2t-surface)] p-6 text-[var(--t2t-text)] transition-all duration-200">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h3 className="text-[15px] font-semibold text-white flex items-center gap-2">
-              <ChartLine className="text-[#5CE65C]" size={18} />
+            <h3 className="text-[15px] font-semibold text-[var(--t2t-text)] flex items-center gap-2">
+              <ChartLine className="text-[#14EF10]" size={18} />
               Collection Trends
             </h3>
-            <p className="text-[12px] text-neutral-500">
+            <p className="text-[12px] text-[var(--t2t-text-secondary)]">
               Daily volume of waste collections over time
             </p>
           </div>
@@ -30,14 +30,14 @@ export function DashboardCharts() {
       </div>
 
       {/* 2. User Growth */}
-      <div className="rounded border border-[#1a1a1a] bg-[#0a0a0a] p-6 text-white transition-all duration-200">
+      <div className="rounded border border-[var(--t2t-border)] bg-[var(--t2t-surface)] p-6 text-[var(--t2t-text)] transition-all duration-200">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h3 className="text-[15px] font-semibold text-white flex items-center gap-2">
-              <ChartBar className="text-[#5CE65C]" size={18} />
+            <h3 className="text-[15px] font-semibold text-[var(--t2t-text)] flex items-center gap-2">
+              <ChartBar className="text-[#14EF10]" size={18} />
               User Growth
             </h3>
-            <p className="text-[12px] text-neutral-500">
+            <p className="text-[12px] text-[var(--t2t-text-secondary)]">
               Cumulative count of registered accounts
             </p>
           </div>

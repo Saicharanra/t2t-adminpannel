@@ -39,13 +39,13 @@ export function Header() {
       initial={false}
       animate={{ paddingLeft: isCollapsed ? 68 : 240 }}
       transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-      className="fixed right-0 top-0 z-30 flex h-14 items-center border-b border-[#1a1a1a] bg-black text-[#eaeaea]"
+      className="fixed right-0 top-0 z-30 flex h-14 items-center border-b border-[var(--t2t-border)] bg-[var(--t2t-topbar-bg)] text-[var(--t2t-text)]"
       style={{ left: 0 }}
     >
       <div className="flex w-full items-center justify-between px-8">
         {/* Left: Current Page Title */}
         <div className="flex items-center">
-          <h1 className="text-[18px] font-semibold text-white tracking-tight">
+          <h1 className="text-[18px] font-semibold text-[var(--t2t-text)] tracking-tight">
             {pageTitle}
           </h1>
         </div>
@@ -60,7 +60,7 @@ export function Header() {
             <input
               type="text"
               placeholder="Search system..."
-              className="h-8 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-[#5CE65C] focus:outline-none transition-all"
+              className="h-8 w-full rounded border border-[var(--t2t-border)] bg-[var(--t2t-surface)] pl-9 pr-4 text-[13px] text-[var(--t2t-text)] placeholder:text-[var(--t2t-text-muted)] focus:border-[#14EF10] focus:outline-none transition-all"
             />
           </div>
         </div>
@@ -68,10 +68,10 @@ export function Header() {
         {/* Right: User Actions */}
         <div className="flex items-center gap-3">
           {/* Status Badge */}
-          <div className="flex items-center gap-1.5 rounded border border-[#1a1a1a] bg-[#0a0a0a] px-2 py-0.5">
+          <div className="flex items-center gap-1.5 rounded border border-[var(--t2t-border)] bg-[var(--t2t-surface)] px-2 py-0.5">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10b981] opacity-75"></span>
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#10b981]"></span>
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#14EF10] opacity-75"></span>
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#14EF10]"></span>
             </span>
             <span className="text-[9px] font-semibold text-neutral-400 tracking-wider uppercase">
               Online
@@ -81,41 +81,41 @@ export function Header() {
           {/* Notifications */}
           <button
             className={cn(
-              "relative flex h-8 w-8 items-center justify-center rounded border border-[#1a1a1a]",
-              "text-neutral-400 hover:bg-neutral-900 hover:text-white transition-colors"
+              "relative flex h-8 w-8 items-center justify-center rounded border border-[var(--t2t-border)]",
+              "text-[var(--t2t-text-secondary)] hover:bg-[var(--t2t-surface-hover)] hover:text-[var(--t2t-text)] transition-colors"
             )}
             aria-label="Notifications"
           >
             <Bell size={14} />
-            <span className="absolute right-2 top-2 flex h-1 w-1 rounded-full bg-[#5CE65C]" />
+            <span className="absolute right-2 top-2 flex h-1 w-1 rounded-full bg-[#14EF10]" />
           </button>
 
           {/* Theme Toggle */}
           <button
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             className={cn(
-              "flex h-8 w-8 items-center justify-center rounded border border-[#1a1a1a]",
-              "text-neutral-400 hover:bg-neutral-900 hover:text-white transition-colors"
+              "flex h-8 w-8 items-center justify-center rounded border border-[var(--t2t-border)]",
+              "text-[var(--t2t-text-secondary)] hover:bg-[var(--t2t-surface-hover)] hover:text-[var(--t2t-text)] transition-colors"
             )}
             title="Toggle theme"
           >
             {mounted && resolvedTheme === "dark" ? (
-              <Sun size={14} className="text-white" />
+              <Sun size={14} className="text-[var(--t2t-text)]" />
             ) : (
-              <Moon size={14} />
+              <Moon size={14} className="text-[var(--t2t-text)]" />
             )}
           </button>
 
           {/* User Profile Info */}
-          <div className="flex items-center gap-3 pl-2 border-l border-[#1a1a1a]">
-            <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[#111111] border border-[#222222] text-[10px] font-semibold text-white tracking-wider">
+          <div className="flex items-center gap-3 pl-2 border-l border-[var(--t2t-border)]">
+            <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--t2t-surface)] border border-[var(--t2t-border)] text-[10px] font-semibold text-[var(--t2t-text)] tracking-wider">
               SA
             </button>
             <div className="hidden text-left lg:block">
-              <p className="text-[12px] font-semibold text-white leading-tight">
+              <p className="text-[12px] font-semibold text-[var(--t2t-text)] leading-tight">
                 Super Admin
               </p>
-              <p className="text-[10px] text-neutral-500 leading-tight">
+              <p className="text-[10px] text-[var(--t2t-text-secondary)] leading-tight">
                 Role: Super
               </p>
             </div>

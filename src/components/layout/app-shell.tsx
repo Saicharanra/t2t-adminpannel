@@ -9,7 +9,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans antialiased">
+    <div className="min-h-screen bg-[var(--t2t-bg)] text-[var(--t2t-text)] font-sans antialiased">
       <Sidebar />
       <Header />
       <motion.main
