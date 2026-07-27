@@ -319,7 +319,7 @@ export async function getCities() {
       distinct: ["city"],
     });
 
-    return cities.map((c: { city: string | null }) => c.city).filter((c): c is string => Boolean(c));
+    return cities.map((c: { city: string | null }) => c.city).filter((c: string | null): c is string => Boolean(c));
   } catch (error) {
     console.error("[getCities Error]:", error);
     return [];
