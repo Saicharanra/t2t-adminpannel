@@ -269,7 +269,15 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
 
     // Deliver OTP via Resend first
     try {
-      await sendOtpEmail(email, plainOtp);
+      await sendOtpEmail({
+        email,
+        adminName: admin.name,
+        otp: plainOtp,
+        ipAddress,
+        browser,
+        os,
+        loginTime: new Date().toLocaleString(),
+      });
     } catch (emailError) {
       console.error("[Resend OTP Email Delivery Error]:", emailError);
       return {
@@ -277,7 +285,6 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
         error: "Unable to send verification email. Please try again.",
       };
     }
-
     // Save hashed OTP & Audit log only after successful email delivery
     try {
       await prisma.adminOTP.create({

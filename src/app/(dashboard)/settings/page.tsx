@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Settings as SettingsIcon,
   Shield,
@@ -123,24 +124,45 @@ export default function SettingsPage() {
             {section.category}
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {section.items.map((item) => (
-              <button
-                key={item.title}
-                className="group flex items-start gap-4 rounded-xl border border-[var(--t2t-border)] bg-[var(--t2t-surface)] p-4 text-left shadow-[var(--t2t-shadow-xs)] hover:border-[var(--t2t-primary)]/30 hover:shadow-[var(--t2t-shadow-md)] transition-all"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--t2t-primary-subtle)] text-[var(--t2t-primary)] transition-colors group-hover:bg-[var(--t2t-primary)] group-hover:text-white">
-                  {item.icon}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-[var(--t2t-text)]">
-                    {item.title}
-                  </h3>
-                  <p className="mt-0.5 text-[13px] text-[var(--t2t-text-secondary)]">
-                    {item.description}
-                  </p>
-                </div>
-              </button>
-            ))}
+            {section.items.map((item) => {
+              const isEmailOrIntegration = item.title === "Email Templates" || item.title === "Integrations";
+              const content = (
+                <>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--t2t-primary-subtle)] text-[var(--t2t-primary)] transition-colors group-hover:bg-[var(--t2t-primary)] group-hover:text-white">
+                    {item.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-[var(--t2t-text)]">
+                      {item.title}
+                    </h3>
+                    <p className="mt-0.5 text-[13px] text-[var(--t2t-text-secondary)]">
+                      {item.description}
+                    </p>
+                  </div>
+                </>
+              );
+
+              if (isEmailOrIntegration) {
+                return (
+                  <Link
+                    href="/settings/email"
+                    key={item.title}
+                    className="group flex items-start gap-4 rounded-xl border border-[var(--t2t-border)] bg-[var(--t2t-surface)] p-4 text-left shadow-[var(--t2t-shadow-xs)] hover:border-[var(--t2t-primary)]/30 hover:shadow-[var(--t2t-shadow-md)] transition-all cursor-pointer"
+                  >
+                    {content}
+                  </Link>
+                );
+              }
+
+              return (
+                <button
+                  key={item.title}
+                  className="group flex items-start gap-4 rounded-xl border border-[var(--t2t-border)] bg-[var(--t2t-surface)] p-4 text-left shadow-[var(--t2t-shadow-xs)] hover:border-[var(--t2t-primary)]/30 hover:shadow-[var(--t2t-shadow-md)] transition-all"
+                >
+                  {content}
+                </button>
+              );
+            })}
           </div>
         </div>
       ))}

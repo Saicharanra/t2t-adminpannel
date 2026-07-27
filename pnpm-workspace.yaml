@@ -1,0 +1,9 @@
+allowBuilds:
+  '@prisma/engines': true
+  prisma: true
+  sharp: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@prisma/adapter-pg@7.9.1'
+  - '@prisma/debug@7.9.1'
+  - '@prisma/driver-adapter-utils@7.9.1'
