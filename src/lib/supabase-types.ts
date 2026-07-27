@@ -208,6 +208,11 @@ export interface Database {
           updated_at?: string;
         };
       };
+      [key: string]: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+      };
     };
   };
 }
