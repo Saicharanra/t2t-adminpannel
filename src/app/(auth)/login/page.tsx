@@ -114,7 +114,7 @@ export default function LoginPage() {
           <input
             {...register("email")}
             type="email"
-            placeholder=""
+            autoComplete="username"
             className="h-[52px] w-full rounded-[12px] border border-[#D1D5DB] bg-white px-4 text-[14px] text-[#111827] focus:border-[#4F772D] focus:ring-2 focus:ring-[#4F772D]/20 focus:outline-none transition-colors"
           />
           {errors.email && (
@@ -143,7 +143,7 @@ export default function LoginPage() {
                 passwordInputRef.current = e;
               }}
               type={showPassword ? "text" : "password"}
-              placeholder=""
+              autoComplete="current-password"
               className="h-[52px] w-full rounded-[12px] border border-[#D1D5DB] bg-white pl-4 pr-12 text-[14px] text-[#111827] focus:border-[#4F772D] focus:ring-2 focus:ring-[#4F772D]/20 focus:outline-none transition-colors"
             />
             <button

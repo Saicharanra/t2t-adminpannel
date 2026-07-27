@@ -1,27 +1,30 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { createServerClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
 export async function getSupportTickets(status?: string) {
+  const supabase = await createServerClient();
+
   try {
-    const where: any = {};
-    if (status && status !== "All") where.status = status;
+    let query = supabase.from("support_tickets").select(`
+      *,
+      user:users(name, email)
+    `);
 
-    const tickets = await prisma.supportTicket.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    if (status && status !== "All") {
+      query = query.eq("status", status);
+    }
 
-    return tickets;
+    const { data: tickets, error } = await query.order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return (tickets || []).map((ticket: any) => ({
+      ...ticket,
+      userId: ticket.user_id,
+      createdAt: ticket.created_at,
+    }));
   } catch (error) {
     console.error("[getSupportTickets Error]:", error);
     return [];
@@ -29,11 +32,17 @@ export async function getSupportTickets(status?: string) {
 }
 
 export async function updateTicketStatus(id: string, status: string) {
+  const supabase = await createServerClient();
+
   try {
-    const ticket = await prisma.supportTicket.update({
-      where: { id },
-      data: { status },
-    });
+    const { data: ticket, error } = await supabase
+      .from("support_tickets")
+      .update({ status })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     revalidatePath("/support");
     return { success: true, ticket };

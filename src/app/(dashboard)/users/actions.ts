@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { createServerClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
 export interface UserFilters {
@@ -21,34 +21,29 @@ export interface UserStats {
 }
 
 export async function getUserStats(): Promise<UserStats> {
+  const supabase = await createServerClient();
+
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [totalUsers, activeUsers, newToday, verifiedUsers] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { status: "Active" } }),
-      prisma.user.count({
-        where: {
-          joinedAt: {
-            gte: today,
-          },
-        },
-      }),
-      prisma.user.count({
-        where: {
-          email: {
-            not: "",
-          },
-        },
-      }),
+    const [totalRes, activeRes, newTodayRes, verifiedRes] = await Promise.all([
+      supabase.from("users").select("*", { count: "exact", head: true }),
+      supabase.from("users").select("*", { count: "exact", head: true }).eq("status", "Active"),
+      supabase.from("users").select("*", { count: "exact", head: true }).gte("joined_at", today.toISOString()),
+      supabase.from("users").select("*", { count: "exact", head: true }).neq("email", ""),
     ]);
 
+    if (totalRes.error) throw totalRes.error;
+    if (activeRes.error) throw activeRes.error;
+    if (newTodayRes.error) throw newTodayRes.error;
+    if (verifiedRes.error) throw verifiedRes.error;
+
     return {
-      totalUsers,
-      activeUsers,
-      verifiedUsers,
-      newToday,
+      totalUsers: totalRes.count || 0,
+      activeUsers: activeRes.count || 0,
+      verifiedUsers: verifiedRes.count || 0,
+      newToday: newTodayRes.count || 0,
     };
   } catch (error) {
     console.error("[getUserStats Error]:", error);
@@ -64,7 +59,7 @@ export async function getUserStats(): Promise<UserStats> {
 export async function getUsers({
   page = 1,
   pageSize = 25,
-  sortBy = "joinedAt",
+  sortBy = "joined_at",
   sortOrder = "desc",
   filters = {},
 }: {
@@ -74,74 +69,82 @@ export async function getUsers({
   sortOrder?: "asc" | "desc";
   filters?: UserFilters;
 }) {
+  const supabase = await createServerClient();
+
   try {
     const skip = (page - 1) * pageSize;
 
-    // Build where clause
-    const where: any = {};
+    // Convert Prisma mapping camelCase fields to snake_case for DB querying if needed
+    const dbSortBy = sortBy === "joinedAt" ? "joined_at" : sortBy;
+
+    // Build query
+    let query = supabase.from("users").select("*, waste_submissions(count)");
 
     if (filters.search) {
-      where.OR = [
-        { name: { contains: filters.search, mode: "insensitive" } },
-        { email: { contains: filters.search, mode: "insensitive" } },
-        { phone: { contains: filters.search, mode: "insensitive" } },
-        { id: { contains: filters.search, mode: "insensitive" } },
-      ];
+      const searchVal = `%${filters.search}%`;
+      query = query.or(`name.ilike.${searchVal},email.ilike.${searchVal},phone.ilike.${searchVal},id.eq.${filters.search}`);
     }
 
     if (filters.status && filters.status !== "all") {
-      where.status = filters.status;
+      query = query.eq("status", filters.status);
     }
 
     if (filters.city && filters.city !== "all") {
-      where.city = filters.city;
+      query = query.eq("city", filters.city);
     }
 
     if (filters.dateFrom) {
-      where.joinedAt = {
-        ...where.joinedAt,
-        gte: new Date(filters.dateFrom),
-      };
+      query = query.gte("joined_at", new Date(filters.dateFrom).toISOString());
     }
 
     if (filters.dateTo) {
-      where.joinedAt = {
-        ...where.joinedAt,
-        lte: new Date(filters.dateTo),
-      };
+      query = query.lte("joined_at", new Date(filters.dateTo).toISOString());
     }
 
     if (filters.pointsMin !== undefined) {
-      where.points = {
-        ...where.points,
-        gte: filters.pointsMin,
-      };
+      query = query.gte("points", filters.pointsMin);
     }
 
     if (filters.pointsMax !== undefined) {
-      where.points = {
-        ...where.points,
-        lte: filters.pointsMax,
-      };
+      query = query.lte("points", filters.pointsMax);
     }
 
-    // Fetch users with submission count
-    const [users, totalCount] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          _count: {
-            select: {
-              submissions: true,
-            },
-          },
-        },
-      }),
-      prisma.user.count({ where }),
+    // Clone query for count calculation
+    let countQuery = supabase.from("users").select("*", { count: "exact", head: true });
+    if (filters.search) {
+      const searchVal = `%${filters.search}%`;
+      countQuery = countQuery.or(`name.ilike.${searchVal},email.ilike.${searchVal},phone.ilike.${searchVal},id.eq.${filters.search}`);
+    }
+    if (filters.status && filters.status !== "all") countQuery = countQuery.eq("status", filters.status);
+    if (filters.city && filters.city !== "all") countQuery = countQuery.eq("city", filters.city);
+    if (filters.dateFrom) countQuery = countQuery.gte("joined_at", new Date(filters.dateFrom).toISOString());
+    if (filters.dateTo) countQuery = countQuery.lte("joined_at", new Date(filters.dateTo).toISOString());
+    if (filters.pointsMin !== undefined) countQuery = countQuery.gte("points", filters.pointsMin);
+    if (filters.pointsMax !== undefined) countQuery = countQuery.lte("points", filters.pointsMax);
+
+    const [dataRes, countRes] = await Promise.all([
+      query
+        .order(dbSortBy, { ascending: sortOrder === "asc" })
+        .range(skip, skip + pageSize - 1),
+      countQuery,
     ]);
+
+    if (dataRes.error) throw dataRes.error;
+    if (countRes.error) throw countRes.error;
+
+    const totalCount = countRes.count || 0;
+
+    // Transform count payload format so that it has the expected `_count: { submissions: count }` structure
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const users = (dataRes.data || []).map((user: any) => {
+      const submissionsCount = user.waste_submissions?.[0]?.count || 0;
+      return {
+        ...user,
+        _count: {
+          submissions: submissionsCount,
+        },
+      };
+    });
 
     return {
       users,
@@ -167,44 +170,61 @@ export async function getUsers({
 }
 
 export async function getUserById(id: string) {
+  const supabase = await createServerClient();
+
   try {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        submissions: {
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        },
-        redemptions: {
-          include: {
-            reward: true,
-          },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        },
-        tickets: {
-          orderBy: { createdAt: "desc" },
-          take: 20,
-        },
-        _count: {
-          select: {
-            submissions: true,
-            redemptions: true,
-            tickets: true,
-          },
-        },
+    const [userRes, submissionsRes, redemptionsRes, ticketsRes] = await Promise.all([
+      supabase.from("users").select("*").eq("id", id).maybeSingle(),
+      supabase
+        .from("waste_submissions")
+        .select("*")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("redemption_requests")
+        .select("*, reward:rewards(*)")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("support_tickets")
+        .select("*")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
+
+    if (userRes.error) throw userRes.error;
+    if (submissionsRes.error) throw submissionsRes.error;
+    if (redemptionsRes.error) throw redemptionsRes.error;
+    if (ticketsRes.error) throw ticketsRes.error;
+
+    const user = userRes.data;
+    if (!user) return null;
+
+    // Map fields matching user page components expectations
+    const mappedUser = {
+      ...user,
+      joinedAt: user.joined_at,
+      wasteSubmitted: user.waste_submitted,
+      submissions: submissionsRes.data || [],
+      redemptions: (redemptionsRes.data || []).map((red: any) => ({
+        ...red,
+        createdAt: red.created_at,
+      })),
+      tickets: ticketsRes.data || [],
+      _count: {
+        submissions: (submissionsRes.data || []).length,
+        redemptions: (redemptionsRes.data || []).length,
+        tickets: (ticketsRes.data || []).length,
       },
-    });
+    };
 
-    if (!user) {
-      return null;
-    }
-
-    // Calculate carbon contribution (rough estimate: 1kg waste = 0.5kg CO2 saved)
-    const carbonSaved = user.wasteSubmitted * 0.5;
+    const carbonSaved = mappedUser.wasteSubmitted * 0.5;
 
     return {
-      ...user,
+      ...mappedUser,
       carbonSaved,
     };
   } catch (error) {
@@ -223,11 +243,17 @@ export async function updateUser(
     status?: string;
   }
 ) {
+  const supabase = await createServerClient();
+
   try {
-    const user = await prisma.user.update({
-      where: { id },
-      data,
-    });
+    const { data: user, error } = await supabase
+      .from("users")
+      .update(data)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     revalidatePath("/users");
     return { success: true, user };
@@ -242,12 +268,16 @@ export async function adjustUserPoints(
   points: number,
   type: "add" | "subtract"
 ) {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: { points: true },
-    });
+  const supabase = await createServerClient();
 
+  try {
+    const { data: user, error: fetchError } = await supabase
+      .from("users")
+      .select("points")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) throw fetchError;
     if (!user) {
       return { success: false, error: "User not found" };
     }
@@ -255,10 +285,14 @@ export async function adjustUserPoints(
     const newPoints =
       type === "add" ? user.points + points : Math.max(0, user.points - points);
 
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: { points: newPoints },
-    });
+    const { data: updatedUser, error: updateError } = await supabase
+      .from("users")
+      .update({ points: newPoints })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
 
     revalidatePath("/users");
     return { success: true, user: updatedUser };
@@ -269,10 +303,11 @@ export async function adjustUserPoints(
 }
 
 export async function deleteUser(id: string) {
+  const supabase = await createServerClient();
+
   try {
-    await prisma.user.delete({
-      where: { id },
-    });
+    const { error } = await supabase.from("users").delete().eq("id", id);
+    if (error) throw error;
 
     revalidatePath("/users");
     return { success: true };
@@ -289,13 +324,21 @@ export async function createUser(data: {
   city?: string;
   status?: string;
 }) {
+  const supabase = await createServerClient();
+
   try {
-    const user = await prisma.user.create({
-      data: {
+    // Generate UUID locally or let db generate it. But id is a references auth.users(id).
+    // Let's create user.
+    const { data: user, error } = await supabase
+      .from("users")
+      .insert({
         ...data,
         status: data.status || "Active",
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     revalidatePath("/users");
     return { success: true, user };
@@ -306,20 +349,19 @@ export async function createUser(data: {
 }
 
 export async function getCities() {
-  try {
-    const cities = await prisma.user.findMany({
-      where: {
-        city: {
-          not: null,
-        },
-      },
-      select: {
-        city: true,
-      },
-      distinct: ["city"],
-    });
+  const supabase = await createServerClient();
 
-    return cities.map((c: { city: string | null }) => c.city).filter((c: string | null): c is string => Boolean(c));
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("city")
+      .not("city", "is", null);
+
+    if (error) throw error;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const uniqueCities = Array.from(new Set(data.map((item: any) => item.city))).filter(Boolean);
+    return uniqueCities;
   } catch (error) {
     console.error("[getCities Error]:", error);
     return [];
@@ -327,32 +369,28 @@ export async function getCities() {
 }
 
 export async function exportUsers(filters: UserFilters, format: "csv" | "excel" | "pdf") {
+  const supabase = await createServerClient();
+
   try {
-    // Build where clause
-    const where: any = {};
+    let query = supabase.from("users").select("*");
 
     if (filters.search) {
-      where.OR = [
-        { name: { contains: filters.search, mode: "insensitive" } },
-        { email: { contains: filters.search, mode: "insensitive" } },
-        { phone: { contains: filters.search, mode: "insensitive" } },
-      ];
+      const searchVal = `%${filters.search}%`;
+      query = query.or(`name.ilike.${searchVal},email.ilike.${searchVal},phone.ilike.${searchVal}`);
     }
 
     if (filters.status && filters.status !== "all") {
-      where.status = filters.status;
+      query = query.eq("status", filters.status);
     }
 
     if (filters.city && filters.city !== "all") {
-      where.city = filters.city;
+      query = query.eq("city", filters.city);
     }
 
-    const users = await prisma.user.findMany({
-      where,
-      orderBy: { joinedAt: "desc" },
-    });
+    const { data: users, error } = await query.order("joined_at", { ascending: false });
 
-    return users;
+    if (error) throw error;
+    return users || [];
   } catch (error) {
     console.error("[exportUsers Error]:", error);
     return [];
@@ -360,17 +398,15 @@ export async function exportUsers(filters: UserFilters, format: "csv" | "excel" 
 }
 
 export async function bulkUpdateUserStatus(userIds: string[], status: string) {
+  const supabase = await createServerClient();
+
   try {
-    await prisma.user.updateMany({
-      where: {
-        id: {
-          in: userIds,
-        },
-      },
-      data: {
-        status,
-      },
-    });
+    const { error } = await supabase
+      .from("users")
+      .update({ status })
+      .in("id", userIds);
+
+    if (error) throw error;
 
     revalidatePath("/users");
     return { success: true, count: userIds.length };
@@ -381,14 +417,15 @@ export async function bulkUpdateUserStatus(userIds: string[], status: string) {
 }
 
 export async function bulkDeleteUsers(userIds: string[]) {
+  const supabase = await createServerClient();
+
   try {
-    await prisma.user.deleteMany({
-      where: {
-        id: {
-          in: userIds,
-        },
-      },
-    });
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .in("id", userIds);
+
+    if (error) throw error;
 
     revalidatePath("/users");
     return { success: true, count: userIds.length };

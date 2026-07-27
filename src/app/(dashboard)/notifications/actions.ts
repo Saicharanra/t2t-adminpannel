@@ -1,15 +1,23 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { createServerClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
 export async function getNotifications() {
-  try {
-    const notifications = await prisma.notification.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+  const supabase = await createServerClient();
 
-    return notifications;
+  try {
+    const { data: notifications, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return (notifications || []).map((notif: any) => ({
+      ...notif,
+      createdAt: notif.created_at,
+    }));
   } catch (error) {
     console.error("[getNotifications Error]:", error);
     return [];
@@ -17,11 +25,17 @@ export async function getNotifications() {
 }
 
 export async function markNotificationAsRead(id: string) {
+  const supabase = await createServerClient();
+
   try {
-    const notification = await prisma.notification.update({
-      where: { id },
-      data: { read: true },
-    });
+    const { data: notification, error } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
 
     revalidatePath("/notifications");
     return { success: true, notification };
@@ -32,11 +46,15 @@ export async function markNotificationAsRead(id: string) {
 }
 
 export async function markAllNotificationsAsRead() {
+  const supabase = await createServerClient();
+
   try {
-    await prisma.notification.updateMany({
-      where: { read: false },
-      data: { read: true },
-    });
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("read", false);
+
+    if (error) throw error;
 
     revalidatePath("/notifications");
     return { success: true };

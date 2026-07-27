@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { createAdminClient } from "@/lib/supabase";
 import { hashOtp, generateDeviceToken, parseUserAgent } from "@/lib/auth-crypto";
 import { sendOtpEmail } from "@/lib/email";
 import { cookies, headers } from "next/headers";
@@ -21,43 +21,60 @@ const verifySchema = z.object({
 /**
  * DB-backed Rate Limiter for secure IP and Account limiting
  */
-async function checkRateLimit(ipAddress: string, email: string): Promise<{ allowed: boolean; error?: string }> {
-  const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
-  const fifteenMinutesAgo = new Date(Date.now() - 15 * 1000 * 60);
+async function checkRateLimit(
+  supabase: ReturnType<typeof createAdminClient>,
+  ipAddress: string,
+  email: string,
+  adminId?: string
+): Promise<{ allowed: boolean; error?: string }> {
+  const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 1000 * 60).toISOString();
 
   try {
     // 1. IP rate limiting (max 10 actions per minute from same IP)
-    const ipActions = await prisma.auditLog.count({
-      where: {
-        ipAddress,
-        createdAt: { gte: oneMinuteAgo },
-      },
-    });
+    const { count: ipActions, error: ipError } = await supabase
+      .from("audit_logs")
+      .select("*", { count: "exact", head: true })
+      .eq("ip_address", ipAddress)
+      .gte("created_at", oneMinuteAgo);
 
-    if (ipActions > 10) {
+    if (ipError) {
+      console.error("[Rate Limit IP Audit Logs Query Error]:", ipError);
+      throw ipError;
+    }
+
+    if (ipActions !== null && ipActions > 10) {
       return { allowed: false, error: "Rate limit exceeded. Too many requests from this IP. Please wait 1 minute." };
     }
 
-    // 2. Resend rate limiting (max 3 OTP requests per email in 5 minutes)
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 1000 * 60);
-    const emailOtps = await prisma.adminOTP.count({
-      where: {
-        admin: { email },
-        createdAt: { gte: fiveMinutesAgo },
-      },
-    });
+    // 2. Resend rate limiting (max 3 OTP requests per admin in 5 minutes)
+    if (adminId) {
+      const { count: emailOtps, error: otpError } = await supabase
+        .from("admin_otps")
+        .select("*", { count: "exact", head: true })
+        .eq("admin_id", adminId)
+        .gte("created_at", fiveMinutesAgo);
 
-    if (emailOtps >= 3) {
-      return { allowed: false, error: "Verification code requested too frequently. Please wait a few minutes." };
+      if (otpError) {
+        console.error("[Rate Limit OTPs Query Error]:", otpError);
+        throw otpError;
+      }
+
+      if (emailOtps !== null && emailOtps >= 3) {
+        return { allowed: false, error: "Verification code requested too frequently. Please wait a few minutes." };
+      }
     }
   } catch (error) {
     console.error("[Rate Limit DB Check Error]:", error);
+    // Don't block the login flow entirely on rate-limiting DB failures, but log it
   }
 
   return { allowed: true };
 }
 
 export async function requestAdminOtpAction(emailInput: string, passwordInput?: string) {
+  const supabase = createAdminClient();
+
   try {
     const validated = loginSchema.safeParse({ email: emailInput, password: passwordInput });
     if (!validated.success) {
@@ -71,50 +88,60 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
     const ipAddress = reqHeaders.get("x-forwarded-for") || reqHeaders.get("x-real-ip") || "127.0.0.1";
     const { browser, os } = parseUserAgent(userAgent);
 
-    // Apply Rate Limiting
-    const rateCheck = await checkRateLimit(ipAddress, email);
-    if (!rateCheck.allowed) {
-      return { success: false, error: rateCheck.error };
-    }
-
     // Auto-seed default admin ONLY if database has 0 admins
     try {
-      const adminCount = await prisma.admin.count();
+      const { count: adminCount, error: countError } = await supabase
+        .from("admins")
+        .select("*", { count: "exact", head: true });
+
+      if (countError) throw countError;
+
       if (adminCount === 0) {
         const salt = await bcrypt.genSalt(12);
         const hashedPassword = await bcrypt.hash("Password123!", salt);
-        await prisma.admin.create({
-          data: {
+        
+        const { error: seedError } = await supabase
+          .from("admins")
+          .insert({
             email: "admin@t2t.com",
             name: "Super Admin",
             password: hashedPassword,
             role: "Super Admin",
-          },
-        });
+          });
+
+        if (seedError) throw seedError;
       }
     } catch (e) {
       console.error("[DB Admin Auto-Seed Error]:", e);
     }
 
-    let admin = null;
-    try {
-      admin = await prisma.admin.findUnique({
-        where: { email },
-      });
-    } catch (error) {
-      console.error("[Admin Find Query Error]:", error);
-      return { success: false, error: "Database service unavailable. Please try again." };
+    // Find admin by email
+    const { data: admin, error: adminError } = await supabase
+      .from("admins")
+      .select("*")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (adminError) {
+      console.error("[Admin Find Query Error]:", adminError);
+      return { success: false, error: `Database service unavailable: ${adminError.message}` };
     }
 
     if (!admin) {
       return { success: false, error: "Administrator account not found." };
     }
 
+    // Apply Rate Limiting
+    const rateCheck = await checkRateLimit(supabase, ipAddress, email, admin.id);
+    if (!rateCheck.allowed) {
+      return { success: false, error: rateCheck.error };
+    }
+
     // Lockout verification
-    if (admin.isLocked && admin.lockedUntil) {
-      if (new Date(admin.lockedUntil) > new Date()) {
+    if (admin.is_locked && admin.locked_until) {
+      if (new Date(admin.locked_until) > new Date()) {
         const minutesLeft = Math.ceil(
-          (new Date(admin.lockedUntil).getTime() - Date.now()) / (60 * 1000)
+          (new Date(admin.locked_until).getTime() - Date.now()) / (60 * 1000)
         );
         return {
           success: false,
@@ -122,13 +149,13 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
         };
       } else {
         // Lockout expired, reset status
-        try {
-          await prisma.admin.update({
-            where: { id: admin.id },
-            data: { isLocked: false, lockedUntil: null, loginAttempts: 0 },
-          });
-        } catch (error) {
-          console.error("[Unlock Admin Update Error]:", error);
+        const { error: unlockError } = await supabase
+          .from("admins")
+          .update({ is_locked: false, locked_until: null, login_attempts: 0 })
+          .eq("id", admin.id);
+
+        if (unlockError) {
+          console.error("[Unlock Admin Update Error]:", unlockError);
         }
       }
     }
@@ -137,39 +164,42 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
     const isPasswordCorrect = await bcrypt.compare(password, admin.password);
 
     if (!isPasswordCorrect) {
-      const newAttempts = admin.loginAttempts + 1;
+      const newAttempts = admin.login_attempts + 1;
       const shouldLock = newAttempts >= 5;
-      const lockedUntil = shouldLock ? new Date(Date.now() + 15 * 60 * 1000) : null;
+      const lockedUntil = shouldLock ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;
 
       try {
-        await prisma.admin.update({
-          where: { id: admin.id },
-          data: {
-            loginAttempts: newAttempts,
-            isLocked: shouldLock,
-            lockedUntil,
-          },
-        });
+        const { error: updateError } = await supabase
+          .from("admins")
+          .update({
+            login_attempts: newAttempts,
+            is_locked: shouldLock,
+            locked_until: lockedUntil,
+          })
+          .eq("id", admin.id);
+        if (updateError) throw updateError;
 
-        await prisma.adminLoginHistory.create({
-          data: {
-            adminId: admin.id,
+        const { error: historyError } = await supabase
+          .from("admin_login_histories")
+          .insert({
+            admin_id: admin.id,
             status: "FAILURE",
-            ipAddress,
-            userAgent,
-          },
-        });
+            ip_address: ipAddress,
+            user_agent: userAgent,
+          });
+        if (historyError) throw historyError;
 
-        await prisma.auditLog.create({
-          data: {
-            adminId: admin.id,
+        const { error: logError } = await supabase
+          .from("audit_logs")
+          .insert({
+            admin_id: admin.id,
             event: "LOGIN_FAILURE",
-            ipAddress,
+            ip_address: ipAddress,
             device: userAgent,
             browser,
             os,
-          },
-        });
+          });
+        if (logError) throw logError;
       } catch (error) {
         console.error("[Login Failure Logger Error]:", error);
       }
@@ -191,29 +221,32 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
     if (rawTrustedToken) {
       try {
         const hashedToken = crypto.createHash("sha256").update(rawTrustedToken).digest("hex");
-        const activeTrust = await prisma.trustedDevice.findFirst({
-          where: {
-            adminId: admin.id,
-            deviceToken: hashedToken,
-            expiresAt: { gte: new Date() },
-          },
-        });
+        const { data: activeTrust, error: trustError } = await supabase
+          .from("trusted_devices")
+          .select("*")
+          .eq("admin_id", admin.id)
+          .eq("device_token", hashedToken)
+          .gte("expires_at", new Date().toISOString())
+          .maybeSingle();
+
+        if (trustError) throw trustError;
 
         if (activeTrust) {
-          // Create cryptographically secure session
+          // Create session
           const sessionToken = crypto.randomUUID();
           const hashedSessionToken = crypto.createHash("sha256").update(sessionToken).digest("hex");
-          const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 hours
+          const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(); // 8 hours
 
-          await prisma.adminSession.create({
-            data: {
-              adminId: admin.id,
-              sessionToken: hashedSessionToken,
-              expiresAt,
-              ipAddress,
-              userAgent,
-            },
-          });
+          const { error: sessionError } = await supabase
+            .from("admin_sessions")
+            .insert({
+              admin_id: admin.id,
+              session_token: hashedSessionToken,
+              expires_at: expiresAt,
+              ip_address: ipAddress,
+              user_agent: userAgent,
+            });
+          if (sessionError) throw sessionError;
 
           cookieStore.set("t2t_session", sessionToken, {
             httpOnly: true,
@@ -223,32 +256,35 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
             path: "/",
           });
 
-          // Reset admin login attempts
-          await prisma.admin.update({
-            where: { id: admin.id },
-            data: { loginAttempts: 0, isLocked: false, lockedUntil: null },
-          });
+          // Reset login attempts
+          const { error: resetAttemptsError } = await supabase
+            .from("admins")
+            .update({ login_attempts: 0, is_locked: false, locked_until: null })
+            .eq("id", admin.id);
+          if (resetAttemptsError) throw resetAttemptsError;
 
-          // Record Login History & Audit Logs
-          await prisma.adminLoginHistory.create({
-            data: {
-              adminId: admin.id,
+          // Record history
+          const { error: successHistoryError } = await supabase
+            .from("admin_login_histories")
+            .insert({
+              admin_id: admin.id,
               status: "SUCCESS",
-              ipAddress,
-              userAgent,
-            },
-          });
+              ip_address: ipAddress,
+              user_agent: userAgent,
+            });
+          if (successHistoryError) throw successHistoryError;
 
-          await prisma.auditLog.create({
-            data: {
-              adminId: admin.id,
+          const { error: auditError } = await supabase
+            .from("audit_logs")
+            .insert({
+              admin_id: admin.id,
               event: "LOGIN_SUCCESS",
-              ipAddress,
-              device: `Trusted Device: ${activeTrust.deviceName || userAgent}`,
+              ip_address: ipAddress,
+              device: `Trusted Device: ${activeTrust.device_name || userAgent}`,
               browser,
               os,
-            },
-          });
+            });
+          if (auditError) throw auditError;
 
           return {
             success: true,
@@ -262,10 +298,10 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
       }
     }
 
-    // Generate secure cryptographically random 6-digit OTP
+    // Generate plain-text code
     const plainOtp = crypto.randomInt(100000, 1000000).toString();
     const otpHash = hashOtp(plainOtp);
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
 
     // Deliver OTP via Resend first
     try {
@@ -285,28 +321,31 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
         error: "Unable to send verification email. Please try again.",
       };
     }
-    // Save hashed OTP & Audit log only after successful email delivery
-    try {
-      await prisma.adminOTP.create({
-        data: {
-          adminId: admin.id,
-          otpHash,
-          expiresAt,
-          ipAddress,
-          userAgent,
-        },
-      });
 
-      await prisma.auditLog.create({
-        data: {
-          adminId: admin.id,
+    // Save OTP & Audit log only after successful email delivery
+    try {
+      const { error: otpInsertError } = await supabase
+        .from("admin_otps")
+        .insert({
+          admin_id: admin.id,
+          otp_hash: otpHash,
+          expires_at: expiresAt,
+          ip_address: ipAddress,
+          user_agent: userAgent,
+        });
+      if (otpInsertError) throw otpInsertError;
+
+      const { error: otpLogError } = await supabase
+        .from("audit_logs")
+        .insert({
+          admin_id: admin.id,
           event: "OTP_SENT",
-          ipAddress,
+          ip_address: ipAddress,
           device: userAgent,
           browser,
           os,
-        },
-      });
+        });
+      if (otpLogError) throw otpLogError;
     } catch (dbError) {
       console.error("[OTP DB Registration Error]:", dbError);
       return { success: false, error: "Database session error. Please try again." };
@@ -319,9 +358,10 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
     };
   } catch (error) {
     console.error("[requestAdminOtpAction Catch Block]:", error);
+    const errObj = error instanceof Error ? error : new Error(String(error));
     return {
       success: false,
-      error: "Authentication service encountered an error. Please try again.",
+      error: `Authentication service error: ${errObj.message}`,
     };
   }
 }
@@ -331,6 +371,8 @@ export async function verifyAdminOtpAction(
   codeInput: string,
   trustDevice: boolean = false
 ) {
+  const supabase = createAdminClient();
+
   try {
     const validated = verifySchema.safeParse({ email: emailInput, code: codeInput });
     if (!validated.success) {
@@ -345,108 +387,136 @@ export async function verifyAdminOtpAction(
     const { browser, os } = parseUserAgent(userAgent);
 
     const inputHash = hashOtp(code);
-    let admin = null;
-    let otpRecord = null;
 
-    try {
-      admin = await prisma.admin.findUnique({
-        where: { email },
-      });
+    // Get Admin
+    const { data: admin, error: adminError } = await supabase
+      .from("admins")
+      .select("*")
+      .eq("email", email)
+      .maybeSingle();
 
-      if (!admin) {
-        return { success: false, error: "Account verification mismatch." };
-      }
+    if (adminError) {
+      console.error("[OTP Verification Admin Query Error]:", adminError);
+      return { success: false, error: `Database fetch error: ${adminError.message}` };
+    }
 
-      if (admin.isLocked && admin.lockedUntil && new Date(admin.lockedUntil) > new Date()) {
-        return { success: false, error: "Account is currently locked. Try again later." };
-      }
+    if (!admin) {
+      return { success: false, error: "Account verification mismatch." };
+    }
 
-      // Find active OTP record
-      otpRecord = await prisma.adminOTP.findFirst({
-        where: {
-          adminId: admin.id,
-          usedAt: null,
-          expiresAt: { gte: new Date() },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+    if (admin.is_locked && admin.locked_until && new Date(admin.locked_until) > new Date()) {
+      return { success: false, error: "Account is currently locked. Try again later." };
+    }
 
-      if (!otpRecord) {
-        return { success: false, error: "Verification code has expired or is invalid." };
-      }
+    // Find active OTP record
+    const { data: otpRecord, error: otpError } = await supabase
+      .from("admin_otps")
+      .select("*")
+      .eq("admin_id", admin.id)
+      .is("used_at", null)
+      .gte("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-      if (otpRecord.attempts >= 5) {
-        return { success: false, error: "Maximum verification attempts exceeded. Request a new code." };
-      }
+    if (otpError) {
+      console.error("[OTP Verification Active OTP Query Error]:", otpError);
+      return { success: false, error: `Database error querying code: ${otpError.message}` };
+    }
 
-      if (otpRecord.otpHash !== inputHash) {
-        const newAttempts = otpRecord.attempts + 1;
-        const newAdminAttempts = admin.loginAttempts + 1;
+    if (!otpRecord) {
+      return { success: false, error: "Verification code has expired or is invalid." };
+    }
 
-        const shouldLock = newAdminAttempts >= 5;
-        const lockedUntil = shouldLock ? new Date(Date.now() + 15 * 60 * 1000) : null;
+    if (otpRecord.attempts >= 5) {
+      return { success: false, error: "Maximum verification attempts exceeded. Request a new code." };
+    }
 
-        await prisma.adminOTP.update({
-          where: { id: otpRecord.id },
-          data: { attempts: newAttempts },
-        });
+    if (otpRecord.otp_hash !== inputHash) {
+      const newAttempts = otpRecord.attempts + 1;
+      const newAdminAttempts = admin.login_attempts + 1;
 
-        await prisma.admin.update({
-          where: { id: admin.id },
-          data: {
-            loginAttempts: newAdminAttempts,
-            isLocked: shouldLock,
-            lockedUntil,
-          },
-        });
+      const shouldLock = newAdminAttempts >= 5;
+      const lockedUntil = shouldLock ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;
 
-        await prisma.auditLog.create({
-          data: {
-            adminId: admin.id,
+      try {
+        const { error: updateOtpErr } = await supabase
+          .from("admin_otps")
+          .update({ attempts: newAttempts })
+          .eq("id", otpRecord.id);
+        if (updateOtpErr) throw updateOtpErr;
+
+        const { error: updateAdminErr } = await supabase
+          .from("admins")
+          .update({
+            login_attempts: newAdminAttempts,
+            is_locked: shouldLock,
+            locked_until: lockedUntil,
+          })
+          .eq("id", admin.id);
+        if (updateAdminErr) throw updateAdminErr;
+
+        const { error: logErr } = await supabase
+          .from("audit_logs")
+          .insert({
+            admin_id: admin.id,
             event: "OTP_FAILED",
-            ipAddress,
+            ip_address: ipAddress,
             device: userAgent,
             browser,
             os,
-          },
-        });
-
-        if (shouldLock) {
-          return { success: false, error: "Too many failed attempts. Account locked for 15 minutes." };
-        }
-
-        return { success: false, error: `Invalid verification code. ${5 - newAttempts} attempts remaining.` };
+          });
+        if (logErr) throw logErr;
+      } catch (error) {
+        console.error("[OTP Attempt Update Logging Error]:", error);
       }
 
-      // Mark OTP as used
-      await prisma.adminOTP.update({
-        where: { id: otpRecord.id },
-        data: { usedAt: new Date() },
-      });
+      if (shouldLock) {
+        return { success: false, error: "Too many failed attempts. Account locked for 15 minutes." };
+      }
 
-      // Reset admin login attempts
-      await prisma.admin.update({
-        where: { id: admin.id },
-        data: { loginAttempts: 0, isLocked: false, lockedUntil: null },
-      });
+      return { success: false, error: `Invalid verification code. ${5 - newAttempts} attempts remaining.` };
+    }
 
-      // Handle Trusted Device for 30 days (saving hashed token)
-      if (trustDevice) {
-        const rawDeviceToken = crypto.randomBytes(32).toString("hex");
-        const hashedDeviceToken = crypto.createHash("sha256").update(rawDeviceToken).digest("hex");
-        const deviceExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    // Mark OTP as used
+    const { error: useOtpError } = await supabase
+      .from("admin_otps")
+      .update({ used_at: new Date().toISOString() })
+      .eq("id", otpRecord.id);
+    if (useOtpError) {
+      console.error("[OTP Mark Used Query Error]:", useOtpError);
+      throw useOtpError;
+    }
 
-        await prisma.trustedDevice.create({
-          data: {
-            adminId: admin.id,
-            deviceToken: hashedDeviceToken,
-            deviceName: `${browser} on ${os}`,
-            expiresAt: deviceExpires,
-            ipAddress,
-            userAgent,
-          },
+    // Reset admin login attempts
+    const { error: resetAdminError } = await supabase
+      .from("admins")
+      .update({ login_attempts: 0, is_locked: false, locked_until: null })
+      .eq("id", admin.id);
+    if (resetAdminError) {
+      console.error("[Admin Lockout Reset Error]:", resetAdminError);
+    }
+
+    // Handle Trusted Device for 30 days
+    if (trustDevice) {
+      const rawDeviceToken = crypto.randomBytes(32).toString("hex");
+      const hashedDeviceToken = crypto.createHash("sha256").update(rawDeviceToken).digest("hex");
+      const deviceExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const { error: deviceError } = await supabase
+        .from("trusted_devices")
+        .insert({
+          admin_id: admin.id,
+          device_token: hashedDeviceToken,
+          device_name: `${browser} on ${os}`,
+          expires_at: deviceExpires,
+          ip_address: ipAddress,
+          user_agent: userAgent,
         });
 
+      if (deviceError) {
+        console.error("[Trusted Device Insertion Error]:", deviceError);
+      } else {
         const cookieStore = await cookies();
         cookieStore.set("t2t_trusted_device", rawDeviceToken, {
           httpOnly: true,
@@ -456,60 +526,65 @@ export async function verifyAdminOtpAction(
           path: "/",
         });
       }
-
-      // Create secure session
-      const sessionToken = crypto.randomUUID();
-      const hashedSessionToken = crypto.createHash("sha256").update(sessionToken).digest("hex");
-      const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 hours
-
-      await prisma.adminSession.create({
-        data: {
-          adminId: admin.id,
-          sessionToken: hashedSessionToken,
-          expiresAt,
-          ipAddress,
-          userAgent,
-        },
-      });
-
-      const cookieStore = await cookies();
-      cookieStore.set("t2t_session", sessionToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 28800, // 8 hours
-        path: "/",
-      });
-
-      // Record Login History & Audit Logs
-      await prisma.adminLoginHistory.create({
-        data: {
-          adminId: admin.id,
-          status: "SUCCESS",
-          ipAddress,
-          userAgent,
-        },
-      });
-
-      await prisma.auditLog.create({
-        data: {
-          adminId: admin.id,
-          event: "LOGIN_SUCCESS",
-          ipAddress,
-          device: userAgent,
-          browser,
-          os,
-        },
-      });
-
-      return { success: true };
-    } catch (dbError) {
-      console.error("[OTP Verification DB Execution Error]:", dbError);
-      return { success: false, error: "Database error during verification. Please try again." };
     }
+
+    // Create session
+    const sessionToken = crypto.randomUUID();
+    const hashedSessionToken = crypto.createHash("sha256").update(sessionToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(); // 8 hours
+
+    const { error: sessionError } = await supabase
+      .from("admin_sessions")
+      .insert({
+        admin_id: admin.id,
+        session_token: hashedSessionToken,
+        expires_at: expiresAt,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+      });
+
+    if (sessionError) {
+      console.error("[Session Registration Error]:", sessionError);
+      throw sessionError;
+    }
+
+    const cookieStore = await cookies();
+    cookieStore.set("t2t_session", sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 28800, // 8 hours
+      path: "/",
+    });
+
+    // Record Login History & Audit Logs
+    const { error: historyError } = await supabase
+      .from("admin_login_histories")
+      .insert({
+        admin_id: admin.id,
+        status: "SUCCESS",
+        ip_address: ipAddress,
+        user_agent: userAgent,
+      });
+    if (historyError) console.error("[Success Login History Insertion Error]:", historyError);
+
+    const { error: auditError } = await supabase
+      .from("audit_logs")
+      .insert({
+        admin_id: admin.id,
+        event: "LOGIN_SUCCESS",
+        ip_address: ipAddress,
+        device: userAgent,
+        browser,
+        os,
+      });
+    if (auditError) console.error("[Success Audit Log Insertion Error]:", auditError);
+
+    return { success: true };
   } catch (error) {
     console.error("[verifyAdminOtpAction Catch Block]:", error);
-    return { success: false, error: "An error occurred during verification." };
+    const errObj = error instanceof Error ? error : new Error(String(error));
+    return { success: false, error: `Verification failed: ${errObj.message}` };
   }
 }
 
@@ -518,6 +593,8 @@ export async function resendOtpAction(email: string) {
 }
 
 export async function logoutAdminAction() {
+  const supabase = createAdminClient();
+
   try {
     const reqHeaders = await headers();
     const userAgent = reqHeaders.get("user-agent") || null;
@@ -525,15 +602,16 @@ export async function logoutAdminAction() {
     const { browser, os } = parseUserAgent(userAgent);
 
     try {
-      await prisma.auditLog.create({
-        data: {
+      const { error: auditError } = await supabase
+        .from("audit_logs")
+        .insert({
           event: "LOGOUT",
-          ipAddress,
+          ip_address: ipAddress,
           device: userAgent,
           browser,
           os,
-        },
-      });
+        });
+      if (auditError) throw auditError;
     } catch (logError) {
       console.error("[Logout Audit Log Error]:", logError);
     }

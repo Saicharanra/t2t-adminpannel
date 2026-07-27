@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { createServerClient } from "@/lib/supabase";
 
 export interface DashboardOverview {
   totalUsers: number;
@@ -10,22 +10,24 @@ export interface DashboardOverview {
 }
 
 export async function getDashboardOverview(): Promise<DashboardOverview> {
+  const supabase = await createServerClient();
+
   try {
-    const [totalUsers, wasteAggregate, activeBins] = await Promise.all([
-      prisma.user.count(),
-      prisma.wasteSubmission.aggregate({
-        _sum: {
-          weight: true,
-        },
-      }),
-      prisma.bin.count({
-        where: {
-          status: "Active",
-        },
-      }),
+    const [usersCountRes, wasteAggregateRes, activeBinsRes] = await Promise.all([
+      supabase.from("users").select("*", { count: "exact", head: true }),
+      supabase.from("waste_submissions").select("weight"),
+      supabase.from("bins").select("*", { count: "exact", head: true }).eq("status", "Active"),
     ]);
 
-    const totalWasteKg = wasteAggregate._sum.weight || 0;
+    if (usersCountRes.error) throw usersCountRes.error;
+    if (wasteAggregateRes.error) throw wasteAggregateRes.error;
+    if (activeBinsRes.error) throw activeBinsRes.error;
+
+    const totalUsers = usersCountRes.count || 0;
+    const activeBins = activeBinsRes.count || 0;
+    
+    // Sum weights in JS from waste_submissions (or fallback to 0)
+    const totalWasteKg = (wasteAggregateRes.data || []).reduce((acc, curr) => acc + (curr.weight || 0), 0);
     const carbonSavedKg = Math.round(totalWasteKg * 0.5 * 10) / 10;
 
     return {

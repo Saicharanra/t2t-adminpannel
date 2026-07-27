@@ -1,21 +1,28 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { createServerClient } from "@/lib/supabase";
 
 export async function getReportsOverview() {
+  const supabase = await createServerClient();
+
   try {
-    const [userCount, submissionCount, businessCount, binCount] = await Promise.all([
-      prisma.user.count(),
-      prisma.wasteSubmission.count(),
-      prisma.business.count(),
-      prisma.bin.count(),
+    const [userCountRes, submissionCountRes, businessCountRes, binCountRes] = await Promise.all([
+      supabase.from("users").select("*", { count: "exact", head: true }),
+      supabase.from("waste_submissions").select("*", { count: "exact", head: true }),
+      supabase.from("businesses").select("*", { count: "exact", head: true }),
+      supabase.from("bins").select("*", { count: "exact", head: true }),
     ]);
 
+    if (userCountRes.error) throw userCountRes.error;
+    if (submissionCountRes.error) throw submissionCountRes.error;
+    if (businessCountRes.error) throw businessCountRes.error;
+    if (binCountRes.error) throw binCountRes.error;
+
     return {
-      userCount,
-      submissionCount,
-      businessCount,
-      binCount,
+      userCount: userCountRes.count || 0,
+      submissionCount: submissionCountRes.count || 0,
+      businessCount: businessCountRes.count || 0,
+      binCount: binCountRes.count || 0,
       generatedAt: new Date().toISOString(),
     };
   } catch (error) {
