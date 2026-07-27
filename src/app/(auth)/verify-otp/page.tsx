@@ -12,7 +12,7 @@ import Link from "next/link";
 function VerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const email = searchParams.get("email") || "admin@t2t.com";
+  const email = searchParams.get("email") || "";
 
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [loading, setLoading] = useState(false);

@@ -31,8 +31,8 @@ export default function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "admin@t2t.com",
-      password: "Password123!",
+      email: "",
+      password: "",
       rememberDevice: true,
     },
   });
@@ -114,8 +114,8 @@ export default function LoginPage() {
           <input
             {...register("email")}
             type="email"
-            placeholder="admin@t2t.com"
-            className="h-[52px] w-full rounded-[12px] border border-[#E5E7EB] bg-white px-4 text-[14px] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#4F772D] focus:outline-none focus:ring-1 focus:ring-[#4F772D] transition-colors"
+            placeholder=""
+            className="h-[52px] w-full rounded-[12px] border border-[#D1D5DB] bg-white px-4 text-[14px] text-[#111827] focus:border-[#4F772D] focus:ring-2 focus:ring-[#4F772D]/20 focus:outline-none transition-colors"
           />
           {errors.email && (
             <p className="text-[12px] font-medium text-red-500">{errors.email.message}</p>
@@ -135,7 +135,7 @@ export default function LoginPage() {
               Forgot Password?
             </Link>
           </div>
-          <div className="relative flex items-center">
+          <div className="relative flex items-center w-full">
             <input
               {...passwordRegister}
               ref={(e) => {
@@ -143,8 +143,8 @@ export default function LoginPage() {
                 passwordInputRef.current = e;
               }}
               type={showPassword ? "text" : "password"}
-              placeholder="••••••••••••"
-              className="h-[52px] w-full rounded-[12px] border border-[#E5E7EB] bg-white pl-4 pr-12 text-[14px] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#4F772D] focus:outline-none focus:ring-1 focus:ring-[#4F772D] transition-colors"
+              placeholder=""
+              className="h-[52px] w-full rounded-[12px] border border-[#D1D5DB] bg-white pl-4 pr-12 text-[14px] text-[#111827] focus:border-[#4F772D] focus:ring-2 focus:ring-[#4F772D]/20 focus:outline-none transition-colors"
             />
             <button
               type="button"
