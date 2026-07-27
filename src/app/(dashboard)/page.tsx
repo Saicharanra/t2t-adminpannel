@@ -1,11 +1,31 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Users, Trash, Archive, Leaf } from "@phosphor-icons/react";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { DashboardCharts } from "@/features/dashboard/components/dashboard-charts";
 import { RecentActivity } from "@/features/dashboard/components/recent-activity";
+import { getDashboardOverview, DashboardOverview } from "./actions";
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardOverview>({
+    totalUsers: 0,
+    totalWasteKg: 0,
+    activeBins: 0,
+    carbonSavedKg: 0,
+  });
+
+  useEffect(() => {
+    getDashboardOverview().then(setStats).catch(() => {
+      setStats({
+        totalUsers: 0,
+        totalWasteKg: 0,
+        activeBins: 0,
+        carbonSavedKg: 0,
+      });
+    });
+  }, []);
+
   return (
     <div className="space-y-8">
       {/* Handcrafted Header section */}
@@ -34,26 +54,26 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title="Users"
-          value="0"
-          description="No activity yet"
+          value={stats.totalUsers.toLocaleString()}
+          description={stats.totalUsers > 0 ? "Registered users" : "No activity yet"}
           icon={<Users size={20} />}
         />
         <KpiCard
           title="Waste Submitted"
-          value="0 kg"
-          description="No activity yet"
+          value={`${stats.totalWasteKg.toLocaleString()} kg`}
+          description={stats.totalWasteKg > 0 ? "Total waste collected" : "No activity yet"}
           icon={<Trash size={20} />}
         />
         <KpiCard
           title="Bins Active"
-          value="0"
-          description="No activity yet"
+          value={stats.activeBins.toLocaleString()}
+          description={stats.activeBins > 0 ? "Smart bins active" : "No activity yet"}
           icon={<Archive size={20} />}
         />
         <KpiCard
           title="Carbon Saved"
-          value="0 kg"
-          description="No activity yet"
+          value={`${stats.carbonSavedKg.toLocaleString()} kg`}
+          description={stats.carbonSavedKg > 0 ? "Estimated CO2 offset" : "No activity yet"}
           icon={<Leaf size={20} />}
         />
       </div>

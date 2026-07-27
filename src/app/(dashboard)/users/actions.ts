@@ -21,36 +21,44 @@ export interface UserStats {
 }
 
 export async function getUserStats(): Promise<UserStats> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  const [totalUsers, activeUsers, newToday] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({ where: { status: "Active" } }),
-    prisma.user.count({
-      where: {
-        joinedAt: {
-          gte: today,
+    const [totalUsers, activeUsers, newToday, verifiedUsers] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { status: "Active" } }),
+      prisma.user.count({
+        where: {
+          joinedAt: {
+            gte: today,
+          },
         },
-      },
-    }),
-  ]);
+      }),
+      prisma.user.count({
+        where: {
+          email: {
+            not: "",
+          },
+        },
+      }),
+    ]);
 
-  // For verified users, we'll count those with email (assuming email presence means verified)
-  const verifiedUsers = await prisma.user.count({
-    where: {
-      email: {
-        not: null,
-      },
-    },
-  });
-
-  return {
-    totalUsers,
-    activeUsers,
-    verifiedUsers,
-    newToday,
-  };
+    return {
+      totalUsers,
+      activeUsers,
+      verifiedUsers,
+      newToday,
+    };
+  } catch (error) {
+    console.error("[getUserStats Error]:", error);
+    return {
+      totalUsers: 0,
+      activeUsers: 0,
+      verifiedUsers: 0,
+      newToday: 0,
+    };
+  }
 }
 
 export async function getUsers({
@@ -66,125 +74,143 @@ export async function getUsers({
   sortOrder?: "asc" | "desc";
   filters?: UserFilters;
 }) {
-  const skip = (page - 1) * pageSize;
+  try {
+    const skip = (page - 1) * pageSize;
 
-  // Build where clause
-  const where: any = {};
+    // Build where clause
+    const where: any = {};
 
-  if (filters.search) {
-    where.OR = [
-      { name: { contains: filters.search, mode: "insensitive" } },
-      { email: { contains: filters.search, mode: "insensitive" } },
-      { phone: { contains: filters.search, mode: "insensitive" } },
-      { id: { contains: filters.search, mode: "insensitive" } },
-    ];
-  }
+    if (filters.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: "insensitive" } },
+        { email: { contains: filters.search, mode: "insensitive" } },
+        { phone: { contains: filters.search, mode: "insensitive" } },
+        { id: { contains: filters.search, mode: "insensitive" } },
+      ];
+    }
 
-  if (filters.status && filters.status !== "all") {
-    where.status = filters.status;
-  }
+    if (filters.status && filters.status !== "all") {
+      where.status = filters.status;
+    }
 
-  if (filters.city && filters.city !== "all") {
-    where.city = filters.city;
-  }
+    if (filters.city && filters.city !== "all") {
+      where.city = filters.city;
+    }
 
-  if (filters.dateFrom) {
-    where.joinedAt = {
-      ...where.joinedAt,
-      gte: new Date(filters.dateFrom),
-    };
-  }
+    if (filters.dateFrom) {
+      where.joinedAt = {
+        ...where.joinedAt,
+        gte: new Date(filters.dateFrom),
+      };
+    }
 
-  if (filters.dateTo) {
-    where.joinedAt = {
-      ...where.joinedAt,
-      lte: new Date(filters.dateTo),
-    };
-  }
+    if (filters.dateTo) {
+      where.joinedAt = {
+        ...where.joinedAt,
+        lte: new Date(filters.dateTo),
+      };
+    }
 
-  if (filters.pointsMin !== undefined) {
-    where.points = {
-      ...where.points,
-      gte: filters.pointsMin,
-    };
-  }
+    if (filters.pointsMin !== undefined) {
+      where.points = {
+        ...where.points,
+        gte: filters.pointsMin,
+      };
+    }
 
-  if (filters.pointsMax !== undefined) {
-    where.points = {
-      ...where.points,
-      lte: filters.pointsMax,
-    };
-  }
+    if (filters.pointsMax !== undefined) {
+      where.points = {
+        ...where.points,
+        lte: filters.pointsMax,
+      };
+    }
 
-  // Fetch users with submission count
-  const [users, totalCount] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      skip,
-      take: pageSize,
-      orderBy: { [sortBy]: sortOrder },
-      include: {
-        _count: {
-          select: {
-            submissions: true,
+    // Fetch users with submission count
+    const [users, totalCount] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          _count: {
+            select: {
+              submissions: true,
+            },
           },
         },
-      },
-    }),
-    prisma.user.count({ where }),
-  ]);
+      }),
+      prisma.user.count({ where }),
+    ]);
 
-  return {
-    users,
-    pagination: {
-      page,
-      pageSize,
-      totalCount,
-      totalPages: Math.ceil(totalCount / pageSize),
-    },
-  };
+    return {
+      users,
+      pagination: {
+        page,
+        pageSize,
+        totalCount,
+        totalPages: Math.ceil(totalCount / pageSize),
+      },
+    };
+  } catch (error) {
+    console.error("[getUsers Error]:", error);
+    return {
+      users: [],
+      pagination: {
+        page,
+        pageSize,
+        totalCount: 0,
+        totalPages: 0,
+      },
+    };
+  }
 }
 
 export async function getUserById(id: string) {
-  const user = await prisma.user.findUnique({
-    where: { id },
-    include: {
-      submissions: {
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      },
-      redemptions: {
-        include: {
-          reward: true,
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        submissions: {
+          orderBy: { createdAt: "desc" },
+          take: 50,
         },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      },
-      tickets: {
-        orderBy: { createdAt: "desc" },
-        take: 20,
-      },
-      _count: {
-        select: {
-          submissions: true,
-          redemptions: true,
-          tickets: true,
+        redemptions: {
+          include: {
+            reward: true,
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        },
+        tickets: {
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        },
+        _count: {
+          select: {
+            submissions: true,
+            redemptions: true,
+            tickets: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!user) {
-    throw new Error("User not found");
+    if (!user) {
+      return null;
+    }
+
+    // Calculate carbon contribution (rough estimate: 1kg waste = 0.5kg CO2 saved)
+    const carbonSaved = user.wasteSubmitted * 0.5;
+
+    return {
+      ...user,
+      carbonSaved,
+    };
+  } catch (error) {
+    console.error("[getUserById Error]:", error);
+    return null;
   }
-
-  // Calculate carbon contribution (rough estimate: 1kg waste = 0.5kg CO2 saved)
-  const carbonSaved = user.wasteSubmitted * 0.5;
-
-  return {
-    ...user,
-    carbonSaved,
-  };
 }
 
 export async function updateUser(
@@ -197,13 +223,18 @@ export async function updateUser(
     status?: string;
   }
 ) {
-  const user = await prisma.user.update({
-    where: { id },
-    data,
-  });
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data,
+    });
 
-  revalidatePath("/users");
-  return user;
+    revalidatePath("/users");
+    return { success: true, user };
+  } catch (error) {
+    console.error("[updateUser Error]:", error);
+    return { success: false, error: "Failed to update user" };
+  }
 }
 
 export async function adjustUserPoints(
@@ -211,34 +242,44 @@ export async function adjustUserPoints(
   points: number,
   type: "add" | "subtract"
 ) {
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: { points: true },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { points: true },
+    });
 
-  if (!user) {
-    throw new Error("User not found");
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+
+    const newPoints =
+      type === "add" ? user.points + points : Math.max(0, user.points - points);
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: { points: newPoints },
+    });
+
+    revalidatePath("/users");
+    return { success: true, user: updatedUser };
+  } catch (error) {
+    console.error("[adjustUserPoints Error]:", error);
+    return { success: false, error: "Failed to adjust user points" };
   }
-
-  const newPoints =
-    type === "add" ? user.points + points : Math.max(0, user.points - points);
-
-  const updatedUser = await prisma.user.update({
-    where: { id },
-    data: { points: newPoints },
-  });
-
-  revalidatePath("/users");
-  return updatedUser;
 }
 
 export async function deleteUser(id: string) {
-  await prisma.user.delete({
-    where: { id },
-  });
+  try {
+    await prisma.user.delete({
+      where: { id },
+    });
 
-  revalidatePath("/users");
-  return { success: true };
+    revalidatePath("/users");
+    return { success: true };
+  } catch (error) {
+    console.error("[deleteUser Error]:", error);
+    return { success: false, error: "Failed to delete user" };
+  }
 }
 
 export async function createUser(data: {
@@ -248,87 +289,111 @@ export async function createUser(data: {
   city?: string;
   status?: string;
 }) {
-  const user = await prisma.user.create({
-    data: {
-      ...data,
-      status: data.status || "Active",
-    },
-  });
+  try {
+    const user = await prisma.user.create({
+      data: {
+        ...data,
+        status: data.status || "Active",
+      },
+    });
 
-  revalidatePath("/users");
-  return user;
+    revalidatePath("/users");
+    return { success: true, user };
+  } catch (error) {
+    console.error("[createUser Error]:", error);
+    return { success: false, error: "Failed to create user" };
+  }
 }
 
 export async function getCities() {
-  const cities = await prisma.user.findMany({
-    where: {
-      city: {
-        not: null,
+  try {
+    const cities = await prisma.user.findMany({
+      where: {
+        city: {
+          not: null,
+        },
       },
-    },
-    select: {
-      city: true,
-    },
-    distinct: ["city"],
-  });
+      select: {
+        city: true,
+      },
+      distinct: ["city"],
+    });
 
-  return cities.map((c) => c.city).filter(Boolean);
+    return cities.map((c) => c.city).filter((c): c is string => Boolean(c));
+  } catch (error) {
+    console.error("[getCities Error]:", error);
+    return [];
+  }
 }
 
 export async function exportUsers(filters: UserFilters, format: "csv" | "excel" | "pdf") {
-  // Build where clause
-  const where: any = {};
+  try {
+    // Build where clause
+    const where: any = {};
 
-  if (filters.search) {
-    where.OR = [
-      { name: { contains: filters.search, mode: "insensitive" } },
-      { email: { contains: filters.search, mode: "insensitive" } },
-      { phone: { contains: filters.search, mode: "insensitive" } },
-    ];
+    if (filters.search) {
+      where.OR = [
+        { name: { contains: filters.search, mode: "insensitive" } },
+        { email: { contains: filters.search, mode: "insensitive" } },
+        { phone: { contains: filters.search, mode: "insensitive" } },
+      ];
+    }
+
+    if (filters.status && filters.status !== "all") {
+      where.status = filters.status;
+    }
+
+    if (filters.city && filters.city !== "all") {
+      where.city = filters.city;
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      orderBy: { joinedAt: "desc" },
+    });
+
+    return users;
+  } catch (error) {
+    console.error("[exportUsers Error]:", error);
+    return [];
   }
-
-  if (filters.status && filters.status !== "all") {
-    where.status = filters.status;
-  }
-
-  if (filters.city && filters.city !== "all") {
-    where.city = filters.city;
-  }
-
-  const users = await prisma.user.findMany({
-    where,
-    orderBy: { joinedAt: "desc" },
-  });
-
-  // Return data for client-side export processing
-  return users;
 }
 
 export async function bulkUpdateUserStatus(userIds: string[], status: string) {
-  await prisma.user.updateMany({
-    where: {
-      id: {
-        in: userIds,
+  try {
+    await prisma.user.updateMany({
+      where: {
+        id: {
+          in: userIds,
+        },
       },
-    },
-    data: {
-      status,
-    },
-  });
+      data: {
+        status,
+      },
+    });
 
-  revalidatePath("/users");
-  return { success: true, count: userIds.length };
+    revalidatePath("/users");
+    return { success: true, count: userIds.length };
+  } catch (error) {
+    console.error("[bulkUpdateUserStatus Error]:", error);
+    return { success: false, count: 0, error: "Failed to update users" };
+  }
 }
 
 export async function bulkDeleteUsers(userIds: string[]) {
-  await prisma.user.deleteMany({
-    where: {
-      id: {
-        in: userIds,
+  try {
+    await prisma.user.deleteMany({
+      where: {
+        id: {
+          in: userIds,
+        },
       },
-    },
-  });
+    });
 
-  revalidatePath("/users");
-  return { success: true, count: userIds.length };
+    revalidatePath("/users");
+    return { success: true, count: userIds.length };
+  } catch (error) {
+    console.error("[bulkDeleteUsers Error]:", error);
+    return { success: false, count: 0, error: "Failed to delete users" };
+  }
 }
