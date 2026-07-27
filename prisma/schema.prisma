@@ -1,0 +1,119 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Admin {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      String     @default("Moderator") // Super Admin, Platform Admin, Moderator, Support Agent, Read-only Admin
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  auditLogs AuditLog[]
+}
+
+model User {
+  id             String            @id @default(uuid())
+  name           String
+  email          String            @unique
+  phone          String?
+  city           String?
+  points         Int               @default(0)
+  wasteSubmitted Float             @default(0) // in kg
+  status         String            @default("Active") // Active, Suspended, Inactive
+  joinedAt       DateTime          @default(now())
+  submissions    WasteSubmission[]
+  tickets        SupportTicket[]
+  redemptions    RedemptionRequest[]
+}
+
+model Business {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  category   String   // Retail, Food, Industrial, etc.
+  status     String   @default("Pending Approval") // Pending Approval, Active, Suspended, Rejected
+  documentUrl String?
+  revenue    Float    @default(0)
+  joinedAt   DateTime @default(now())
+}
+
+model WasteSubmission {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     String   // Plastic, Metal, Paper, Glass, Organic, E-Waste
+  weight       Float    // in kg
+  location     String
+  status       String   @default("Pending") // Pending, Approved, Rejected, Needs Reupload
+  imageUrl     String?
+  aiConfidence Float    @default(0) // AI confidence score
+  points       Int      @default(0)
+  notes        String?
+  createdAt    DateTime @default(now())
+}
+
+model Bin {
+  id                String   @id @default(uuid())
+  location          String
+  capacity          Float    // max capacity in kg
+  fillPercentage    Float    @default(0) // live fill status %
+  status            String   @default("Active") // Active, Full, Maintenance
+  maintenanceStatus String?
+  lastCleared       DateTime @default(now())
+}
+
+model Reward {
+  id             String              @id @default(uuid())
+  title          String
+  description    String
+  pointsRequired Int
+  category       String              // Coupon, Gift Card, Partner Offer
+  stock          Int                 @default(0)
+  expiry         DateTime?
+  redemptions    RedemptionRequest[]
+}
+
+model RedemptionRequest {
+  id        String   @id @default(uuid())
+  rewardId  String
+  reward    Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String   @default("Pending") // Pending, Approved, Rejected
+  createdAt DateTime @default(now())
+}
+
+model SupportTicket {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String
+  message   String
+  status    String   @default("Open") // Open, In Progress, Resolved
+  priority  String   @default("Medium") // Urgent, High, Medium, Low
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  adminId   String
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  event     String
+  ipAddress String?
+  device    String?
+  timestamp DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

@@ -1,26 +1,216 @@
 @import "tailwindcss";
 
+/* ───────────────────────────────────────────────
+   T2T Admin — Premium Dark Eco-Inspired Design System
+   Primary: #4F772D | Secondary/Gold: #FEFAE0
+   ─────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand Accents */
+  --t2t-primary: #4F772D;
+  --t2t-primary-hover: #6A994E;
+  --t2t-primary-light: rgba(79, 119, 45, 0.15);
+  --t2t-primary-subtle: rgba(79, 119, 45, 0.05);
+
+  /* Gold Accent */
+  --t2t-gold: #FEFAE0;
+  --t2t-gold-hover: #E9E4C9;
+
+  /* Surfaces & Layout */
+  --t2t-bg: #0B0F0C;
+  --t2t-bg-secondary: #111814;
+  --t2t-surface: #161816;
+  --t2t-surface-hover: #1C1F1C;
+  --t2t-sidebar-bg: #111814;
+  --t2t-topbar-bg: #111814;
+  --t2t-border: rgba(255, 255, 255, 0.05);
+  --t2t-border-subtle: rgba(255, 255, 255, 0.03);
+  --t2t-border-focus: #4F772D;
+
+  /* Text (High contrast on dark background) */
+  --t2t-text: #FFFFFF;
+  --t2t-text-secondary: #B8C2B5;
+  --t2t-text-muted: #7E8A81;
+  --t2t-text-inverse: #0B0F0C;
+
+  /* Semantic Colors */
+  --t2t-success: #16A34A;
+  --t2t-success-light: rgba(22, 163, 74, 0.15);
+  --t2t-warning: #F59E0B;
+  --t2t-warning-light: rgba(245, 158, 11, 0.15);
+  --t2t-danger: #DC2626;
+  --t2t-danger-light: rgba(220, 38, 38, 0.15);
+  --t2t-info: #2563EB;
+  --t2t-info-light: rgba(37, 99, 235, 0.15);
+
+  /* Shadows */
+  --t2t-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --t2t-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --t2t-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --t2t-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+
+  /* Radius */
+  --t2t-radius: 14px;
+  --t2t-radius-sm: 8px;
+  --t2t-radius-lg: 16px;
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+  --header-height: 64px;
+
+  /* shadcn/ui tokens */
+  --background: 140 18% 5%;
+  --foreground: 100 12% 95%;
+  --card: 140 10% 8%;
+  --card-foreground: 100 12% 95%;
+  --popover: 140 10% 8%;
+  --popover-foreground: 100 12% 95%;
+  --primary: 90 45% 32%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 140 15% 10%;
+  --secondary-foreground: 100 12% 95%;
+  --muted: 140 15% 10%;
+  --muted-foreground: 100 10% 70%;
+  --accent: 140 15% 15%;
+  --accent-foreground: 100 12% 95%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 140 10% 15%;
+  --input: 140 10% 15%;
+  --ring: 90 45% 32%;
+  --radius: 0.875rem;
+
+  --chart-1: 90 45% 32%;
+  --chart-2: 43 100% 93%;
+  --chart-3: 160 50% 40%;
+  --chart-4: 35 70% 50%;
+  --chart-5: 120 35% 45%;
+
+  --sidebar-background: 140 18% 8%;
+  --sidebar-foreground: 100 12% 95%;
+  --sidebar-primary: 90 45% 32%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 140 15% 10%;
+  --sidebar-accent-foreground: 100 12% 95%;
+  --sidebar-border: 140 10% 15%;
+  --sidebar-ring: 90 45% 32%;
 }
+
+.dark {
+  /* Keep dark same as root since it's dark-only eco-tech theme */
+}
+
+/* ───────────────────────────────────────────────
+   Tailwind v4 Theme Configuration
+   ─────────────────────────────────────────────── */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--t2t-bg);
+  --color-foreground: var(--t2t-text);
+  --color-card: var(--t2t-surface);
+  --color-card-foreground: var(--t2t-text);
+  --color-popover: var(--t2t-surface);
+  --color-popover-foreground: var(--t2t-text);
+  --color-primary: var(--t2t-primary);
+  --color-primary-foreground: var(--t2t-text-inverse);
+  --color-secondary: var(--t2t-bg-secondary);
+  --color-secondary-foreground: var(--t2t-text);
+  --color-muted: var(--t2t-text-muted);
+  --color-muted-foreground: var(--t2t-text-muted);
+  --color-destructive: var(--t2t-danger);
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: var(--t2t-border);
+  --color-input: var(--t2t-surface);
+  --color-ring: var(--t2t-primary);
+  --radius-sm: var(--t2t-radius-sm);
+  --radius-md: var(--t2t-radius);
+  --radius-lg: var(--t2t-radius-lg);
+  --font-sans: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ───────────────────────────────────────────────
+   Base Styles & Scrollbar
+   ─────────────────────────────────────────────── */
+
+* {
+  border-color: var(--t2t-border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--t2t-bg);
+  color: var(--t2t-text);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--t2t-bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--t2t-primary);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--t2t-primary-hover);
+}
+
+/* Dark sidebar scrollbar */
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Focus indicator globally */
+:focus-visible {
+  outline: 2px solid var(--t2t-primary);
+  outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+  background-color: var(--t2t-primary-light);
+  color: var(--t2t-gold);
+}
+
+/* Typography scale utilities */
+.text-heading-1 {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.text-heading-2 {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.text-heading-3 {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.text-body {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.text-label {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.text-caption {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
 }
