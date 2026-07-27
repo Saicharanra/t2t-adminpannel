@@ -6,99 +6,95 @@
    ─────────────────────────────────────────────── */
 
 :root {
-  /* Brand Accents */
-  --t2t-primary: #4F772D;
-  --t2t-primary-hover: #6A994E;
-  --t2t-primary-light: rgba(79, 119, 45, 0.15);
-  --t2t-primary-subtle: rgba(79, 119, 45, 0.05);
+  /* Brand Accents (Primary White + Secondary Green) */
+  --t2t-primary: #fefefe; /* Primary dashboard accent */
+  --t2t-primary-hover: #e5e5e5;
+  --t2t-primary-light: rgba(254, 254, 254, 0.12);
+  --t2t-primary-subtle: rgba(254, 254, 254, 0.04);
 
-  /* Gold Accent */
-  --t2t-gold: #FEFAE0;
-  --t2t-gold-hover: #E9E4C9;
+  /* Secondary Accent (Vibrant Green) */
+  --t2t-gold: #5CE65C;
+  --t2t-gold-hover: #4cd14c;
 
-  /* Surfaces & Layout */
-  --t2t-bg: #0B0F0C;
-  --t2t-bg-secondary: #111814;
-  --t2t-surface: #161816;
-  --t2t-surface-hover: #1C1F1C;
-  --t2t-sidebar-bg: #111814;
-  --t2t-topbar-bg: #111814;
-  --t2t-border: rgba(255, 255, 255, 0.05);
-  --t2t-border-subtle: rgba(255, 255, 255, 0.03);
-  --t2t-border-focus: #4F772D;
+  /* Surfaces & Layout (Pure black / dark gray Vercel look) */
+  --t2t-bg: #000000;
+  --t2t-bg-secondary: #080808;
+  --t2t-surface: #0a0a0a;
+  --t2t-surface-hover: #121212;
+  --t2t-sidebar-bg: #000000;
+  --t2t-topbar-bg: #000000;
+  --t2t-border: rgba(255, 255, 255, 0.08); /* Crisp Vercel borders */
+  --t2t-border-subtle: rgba(255, 255, 255, 0.04);
+  --t2t-border-focus: #5CE65C;
 
-  /* Text (High contrast on dark background) */
-  --t2t-text: #FFFFFF;
-  --t2t-text-secondary: #B8C2B5;
-  --t2t-text-muted: #7E8A81;
-  --t2t-text-inverse: #0B0F0C;
+  /* Text (Precise typography) */
+  --t2t-text: #ffffff;
+  --t2t-text-secondary: #888888;
+  --t2t-text-muted: #666666;
+  --t2t-text-inverse: #000000;
 
   /* Semantic Colors */
-  --t2t-success: #16A34A;
-  --t2t-success-light: rgba(22, 163, 74, 0.15);
-  --t2t-warning: #F59E0B;
-  --t2t-warning-light: rgba(245, 158, 11, 0.15);
-  --t2t-danger: #DC2626;
-  --t2t-danger-light: rgba(220, 38, 38, 0.15);
-  --t2t-info: #2563EB;
-  --t2t-info-light: rgba(37, 99, 235, 0.15);
+  --t2t-success: #5CE65C;
+  --t2t-success-light: rgba(92, 230, 92, 0.1);
+  --t2t-warning: #f59e0b;
+  --t2t-warning-light: rgba(245, 158, 11, 0.1);
+  --t2t-danger: #ef4444;
+  --t2t-danger-light: rgba(239, 68, 68, 0.1);
+  --t2t-info: #3b82f6;
+  --t2t-info-light: rgba(59, 130, 246, 0.1);
 
-  /* Shadows */
-  --t2t-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --t2t-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --t2t-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
-  --t2t-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+  /* Shadows (Minimal or none, Vercel focuses on borders) */
+  --t2t-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --t2t-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --t2t-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --t2t-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
 
-  /* Radius */
-  --t2t-radius: 14px;
-  --t2t-radius-sm: 8px;
-  --t2t-radius-lg: 16px;
+  /* Radius (Crisp minimal Vercel styling uses 6px/8px instead of 14px) */
+  --t2t-radius: 6px;
+  --t2t-radius-sm: 4px;
+  --t2t-radius-lg: 8px;
 
   /* Layout */
-  --sidebar-width: 260px;
-  --sidebar-collapsed-width: 72px;
-  --header-height: 64px;
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 68px;
+  --header-height: 56px;
 
   /* shadcn/ui tokens */
-  --background: 140 18% 5%;
-  --foreground: 100 12% 95%;
-  --card: 140 10% 8%;
-  --card-foreground: 100 12% 95%;
-  --popover: 140 10% 8%;
-  --popover-foreground: 100 12% 95%;
-  --primary: 90 45% 32%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 140 15% 10%;
-  --secondary-foreground: 100 12% 95%;
-  --muted: 140 15% 10%;
-  --muted-foreground: 100 10% 70%;
-  --accent: 140 15% 15%;
-  --accent-foreground: 100 12% 95%;
-  --destructive: 0 72% 51%;
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 4%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 4%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 120 74% 63%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 8%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 0 0% 12%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 140 10% 15%;
-  --input: 140 10% 15%;
-  --ring: 90 45% 32%;
-  --radius: 0.875rem;
+  --border: 0 0% 12%;
+  --input: 0 0% 12%;
+  --ring: 120 74% 63%;
+  --radius: 0.375rem;
 
-  --chart-1: 90 45% 32%;
-  --chart-2: 43 100% 93%;
-  --chart-3: 160 50% 40%;
-  --chart-4: 35 70% 50%;
-  --chart-5: 120 35% 45%;
+  --chart-1: 120 74% 63%;
+  --chart-2: 0 0% 100%;
+  --chart-3: 140 60% 45%;
+  --chart-4: 40 85% 55%;
+  --chart-5: 0 0% 70%;
 
-  --sidebar-background: 140 18% 8%;
-  --sidebar-foreground: 100 12% 95%;
-  --sidebar-primary: 90 45% 32%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 140 15% 10%;
-  --sidebar-accent-foreground: 100 12% 95%;
-  --sidebar-border: 140 10% 15%;
-  --sidebar-ring: 90 45% 32%;
-}
-
-.dark {
-  /* Keep dark same as root since it's dark-only eco-tech theme */
+  --sidebar-background: 0 0% 2%;
+  --sidebar-foreground: 0 0% 90%;
+  --sidebar-primary: 0 0% 100%;
+  --sidebar-primary-foreground: 0 0% 0%;
+  --sidebar-accent: 0 0% 8%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 0 0% 8%;
+  --sidebar-ring: 120 74% 63%;
 }
 
 /* ───────────────────────────────────────────────

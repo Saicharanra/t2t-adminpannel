@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Trash2, Package, Leaf } from "lucide-react";
+import { Users, Trash, Archive, Leaf } from "@phosphor-icons/react";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { DashboardCharts } from "@/features/dashboard/components/dashboard-charts";
 import { RecentActivity } from "@/features/dashboard/components/recent-activity";
@@ -11,20 +11,20 @@ export default function DashboardPage() {
       {/* Handcrafted Header section */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[48px] font-bold tracking-tight text-[#111111] leading-none">
+          <h1 className="text-[32px] font-bold tracking-tight text-white leading-none">
             Dashboard
           </h1>
-          <p className="mt-2 text-[14px] text-[#6B7280]">
+          <p className="mt-2 text-[14px] text-neutral-500">
             Live overview of the Trash2Treasure ecosystem.
           </p>
         </div>
-        {/* Green Live Badge */}
-        <div className="flex items-center gap-2 rounded-full border border-[#ECECEC] bg-white px-4 py-1.5 self-start sm:self-center shadow-sm">
+        {/* Live Badge */}
+        <div className="flex items-center gap-2 rounded border border-[#1a1a1a] bg-[#0a0a0a] px-3.5 py-1 self-start sm:self-center">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#16A34A] opacity-75"></span>
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#16A34A]"></span>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10b981] opacity-75"></span>
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#10b981]"></span>
           </span>
-          <span className="text-[12px] font-bold text-[#4F772D] tracking-wider uppercase">
+          <span className="text-[11px] font-bold text-neutral-400 tracking-wider uppercase">
             Live Monitoring
           </span>
         </div>
@@ -42,13 +42,13 @@ export default function DashboardPage() {
           title="Waste Submitted"
           value="0 kg"
           description="No activity yet"
-          icon={<Trash2 size={20} />}
+          icon={<Trash size={20} />}
         />
         <KpiCard
           title="Bins Active"
           value="0"
           description="No activity yet"
-          icon={<Package size={20} />}
+          icon={<Archive size={20} />}
         />
         <KpiCard
           title="Carbon Saved"

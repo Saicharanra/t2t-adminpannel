@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
-import { Leaf, Mail, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Leaf, EnvelopeSimple, CircleNotch, ArrowLeft, CheckCircle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 const forgotPasswordSchema = zod.object({
@@ -44,32 +44,32 @@ export default function ForgotPasswordPage() {
     <div className="space-y-6">
       <div className="text-center sm:text-left space-y-2">
         <div className="flex justify-center sm:justify-start">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#111827] text-white">
-            <Leaf size={20} />
+          <div className="flex h-9 w-9 items-center justify-center rounded bg-[#111111] border border-[#222222] text-white">
+            <Leaf size={18} weight="bold" />
           </div>
         </div>
-        <h2 className="text-[30px] font-bold tracking-tight text-[#111827]">
+        <h2 className="text-[24px] font-bold tracking-tight text-white">
           Reset password
         </h2>
-        <p className="text-[14px] text-[#6B7280]">
+        <p className="text-[13px] text-neutral-500">
           Enter your administrator email to receive reset instructions
         </p>
       </div>
 
       {submitted ? (
-        <div className="rounded-lg border border-[#E8F5E0] bg-[#FAFAFA] p-5 text-center sm:text-left space-y-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#16A34A]/10 text-[#16A34A] mx-auto sm:mx-0">
-            <CheckCircle2 size={18} />
+        <div className="rounded border border-[#1a1a1a] bg-[#0a0a0a] p-5 text-center sm:text-left space-y-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5CE65C]/10 text-[#5CE65C] border border-[#5CE65C]/25 mx-auto sm:mx-0">
+            <CheckCircle size={18} />
           </div>
-          <h3 className="text-base font-semibold text-[#111827]">
+          <h3 className="text-[14px] font-semibold text-white">
             Check your email
           </h3>
-          <p className="text-[13px] text-[#6B7280] leading-relaxed">
+          <p className="text-[12px] text-neutral-400 leading-relaxed">
             If an administrator account exists for that email address, we have sent instructions to reset your password.
           </p>
           <button
             onClick={() => router.push("/login")}
-            className="flex items-center gap-1.5 text-[13px] font-semibold text-[#4F772D] hover:underline mx-auto sm:mx-0"
+            className="flex items-center gap-1.5 text-[12px] font-semibold text-[#5CE65C] hover:text-[#4cd14c] hover:underline mx-auto sm:mx-0"
           >
             <ArrowLeft size={14} />
             Back to login
@@ -78,23 +78,23 @@ export default function ForgotPasswordPage() {
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-[13px] font-semibold text-[#111827]">
+            <label className="text-[12px] font-semibold text-neutral-300">
               Email Address
             </label>
             <div className="relative">
-              <Mail
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]"
+              <EnvelopeSimple
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
               />
               <input
                 type="email"
                 {...register("email")}
-                className="h-11 w-full rounded-lg border border-[#EAEAEA] bg-white pl-10 pr-4 text-[14px] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#4F772D] focus:outline-none focus:ring-1 focus:ring-[#4F772D] transition-all"
+                className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-[#5CE65C] focus:outline-none transition-all"
                 placeholder="name@t2t.com"
               />
             </div>
             {errors.email && (
-              <p className="text-[12px] text-[#DC2626]">{errors.email.message}</p>
+              <p className="text-[11px] text-red-500">{errors.email.message}</p>
             )}
           </div>
 
@@ -102,10 +102,10 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#4F772D] text-sm font-semibold text-white shadow-sm hover:bg-[#066328] transition-colors disabled:opacity-50"
+              className="flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[#fefefe] text-xs font-semibold text-black shadow-sm hover:bg-[#e5e5e5] transition-colors disabled:opacity-50"
             >
               {loading ? (
-                <Loader2 size={16} className="animate-spin" />
+                <CircleNotch size={14} className="animate-spin text-black" />
               ) : (
                 "Send reset instructions"
               )}
@@ -114,9 +114,9 @@ export default function ForgotPasswordPage() {
             <button
               type="button"
               onClick={() => router.push("/login")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-[#EAEAEA] bg-white text-sm font-semibold text-[#111827] shadow-sm hover:bg-[#FAFAFA] transition-colors"
+              className="flex h-9 w-full items-center justify-center gap-1.5 rounded border border-[#1a1a1a] bg-transparent text-xs font-semibold text-white shadow-sm hover:bg-[#121212] transition-colors"
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft size={14} />
               Cancel and back
             </button>
           </div>

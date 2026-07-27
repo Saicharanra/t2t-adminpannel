@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
-import { Leaf, Lock, Mail, Loader2, ArrowRight } from "lucide-react";
+import { Leaf, Lock, EnvelopeSimple, CircleNotch, ArrowRight } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 const loginSchema = zod.object({
@@ -49,14 +49,14 @@ export default function LoginPage() {
     <div className="space-y-6">
       <div className="text-center sm:text-left space-y-2">
         <div className="flex justify-center sm:justify-start">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#111827] text-white">
-            <Leaf size={20} />
+          <div className="flex h-9 w-9 items-center justify-center rounded bg-[#111111] border border-[#222222] text-white">
+            <Leaf size={18} weight="bold" />
           </div>
         </div>
-        <h2 className="text-[30px] font-bold tracking-tight text-[#111827]">
+        <h2 className="text-[24px] font-bold tracking-tight text-white">
           Welcome back
         </h2>
-        <p className="text-[14px] text-[#6B7280]">
+        <p className="text-[13px] text-neutral-500">
           Sign in to the Trash2Treasure administration center
         </p>
       </div>
@@ -64,53 +64,53 @@ export default function LoginPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Email */}
         <div className="space-y-1.5">
-          <label className="text-[13px] font-semibold text-[#111827]">
+          <label className="text-[12px] font-semibold text-neutral-300">
             Email Address
           </label>
           <div className="relative">
-            <Mail
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]"
+            <EnvelopeSimple
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
             />
             <input
               type="email"
               {...register("email")}
-              className="h-11 w-full rounded-lg border border-[#EAEAEA] bg-white pl-10 pr-4 text-[14px] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#4F772D] focus:outline-none focus:ring-1 focus:ring-[#4F772D] transition-all"
+              className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-[#f38020] focus:outline-none transition-all"
               placeholder="name@t2t.com"
             />
           </div>
           {errors.email && (
-            <p className="text-[12px] text-[#DC2626]">{errors.email.message}</p>
+            <p className="text-[11px] text-red-500">{errors.email.message}</p>
           )}
         </div>
 
         {/* Password */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-[13px] font-semibold text-[#111827]">
+            <label className="text-[12px] font-semibold text-neutral-300">
               Password
             </label>
             <a
               href="/forgot-password"
-              className="text-[13px] font-medium text-[#4F772D] hover:underline"
+              className="text-[12px] font-medium text-[#5CE65C] hover:text-[#4cd14c] hover:underline"
             >
               Forgot password?
             </a>
           </div>
           <div className="relative">
             <Lock
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]"
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
             />
             <input
               type="password"
               {...register("password")}
-              className="h-11 w-full rounded-lg border border-[#EAEAEA] bg-white pl-10 pr-4 text-[14px] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#4F772D] focus:outline-none focus:ring-1 focus:ring-[#4F772D] transition-all"
+              className="h-9 w-full rounded border border-[#1a1a1a] bg-[#0a0a0a] pl-9 pr-4 text-[13px] text-white placeholder:text-neutral-500 focus:border-[#5CE65C] focus:outline-none transition-all"
               placeholder="••••••••"
             />
           </div>
           {errors.password && (
-            <p className="text-[12px] text-[#DC2626]">{errors.password.message}</p>
+            <p className="text-[11px] text-red-500">{errors.password.message}</p>
           )}
         </div>
 
@@ -118,14 +118,14 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#4F772D] text-sm font-semibold text-white shadow-sm hover:bg-[#066328] transition-colors disabled:opacity-50"
+          className="flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[#fefefe] text-xs font-semibold text-black shadow-sm hover:bg-[#e5e5e5] transition-colors disabled:opacity-50"
         >
           {loading ? (
-            <Loader2 size={16} className="animate-spin" />
+            <CircleNotch size={14} className="animate-spin text-black" />
           ) : (
             <>
               Continue
-              <ArrowRight size={16} />
+              <ArrowRight size={14} />
             </>
           )}
         </button>

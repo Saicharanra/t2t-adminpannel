@@ -1,16 +1,16 @@
 import {
-  LayoutDashboard,
+  SquaresFour,
   Users,
-  Building2,
-  Trash2,
-  Container,
+  Buildings,
+  Trash,
+  Archive,
   Gift,
   FileText,
-  BarChart3,
-  HeadphonesIcon,
+  ChartBar,
+  Headset,
   Bell,
-  Settings,
-} from "lucide-react";
+  Gear,
+} from "@phosphor-icons/react";
 
 export interface NavItem {
   title: string;
@@ -83,15 +83,15 @@ export const navigation: NavGroup[] = [
 ];
 
 export const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  LayoutDashboard,
-  Users,
-  Building2,
-  Trash2,
-  Container,
-  Gift,
-  FileText,
-  BarChart3,
-  HeadphonesIcon,
-  Bell,
-  Settings,
+  LayoutDashboard: SquaresFour,
+  Users: Users,
+  Building2: Buildings,
+  Trash2: Trash,
+  Container: Archive,
+  Gift: Gift,
+  FileText: FileText,
+  BarChart3: ChartBar,
+  HeadphonesIcon: Headset,
+  Bell: Bell,
+  Settings: Gear,
 };

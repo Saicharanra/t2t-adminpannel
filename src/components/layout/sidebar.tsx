@@ -4,21 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard,
+  SquaresFour,
   Users,
-  Building2,
-  Trash2,
-  Package,
+  Buildings,
+  Trash,
+  Archive,
   Gift,
   FileText,
-  BarChart3,
+  ChartBar,
   Leaf,
   ShieldCheck,
-  Settings,
-  ScrollText,
-  ChevronLeft,
-  Search,
-} from "lucide-react";
+  Gear,
+  Scroll,
+  CaretLeft,
+} from "@phosphor-icons/react";
 import { useSidebar } from "@/providers/sidebar-provider";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +40,7 @@ const navGroups: NavGroup[] = [
       {
         title: "Dashboard",
         href: "/",
-        icon: <LayoutDashboard size={18} />,
+        icon: <SquaresFour size={18} />,
         shortcut: "⌘D",
       },
     ],
@@ -50,9 +49,9 @@ const navGroups: NavGroup[] = [
     label: "OPERATIONS",
     items: [
       { title: "Users", href: "/users", icon: <Users size={18} />, shortcut: "⌘U" },
-      { title: "Businesses", href: "/businesses", icon: <Building2 size={18} />, shortcut: "⌘B" },
-      { title: "Waste Submissions", href: "/waste-submissions", icon: <Trash2 size={18} /> },
-      { title: "Bin Management", href: "/bins", icon: <Package size={18} /> },
+      { title: "Businesses", href: "/businesses", icon: <Buildings size={18} />, shortcut: "⌘B" },
+      { title: "Waste Submissions", href: "/waste-submissions", icon: <Trash size={18} /> },
+      { title: "Bin Management", href: "/bins", icon: <Archive size={18} /> },
       { title: "Rewards", href: "/rewards", icon: <Gift size={18} /> },
     ],
   },
@@ -60,7 +59,7 @@ const navGroups: NavGroup[] = [
     label: "ANALYTICS",
     items: [
       { title: "Reports", href: "/reports", icon: <FileText size={18} /> },
-      { title: "Analytics", href: "/analytics", icon: <BarChart3 size={18} />, shortcut: "⌘A" },
+      { title: "Analytics", href: "/analytics", icon: <ChartBar size={18} />, shortcut: "⌘A" },
       { title: "Carbon Impact", href: "/carbon-impact", icon: <Leaf size={18} /> },
     ],
   },
@@ -68,8 +67,8 @@ const navGroups: NavGroup[] = [
     label: "SYSTEM",
     items: [
       { title: "Admins", href: "/admins", icon: <ShieldCheck size={18} /> },
-      { title: "Settings", href: "/settings", icon: <Settings size={18} />, shortcut: "⌘," },
-      { title: "Audit Logs", href: "/audit-logs", icon: <ScrollText size={18} /> },
+      { title: "Settings", href: "/settings", icon: <Gear size={18} />, shortcut: "⌘," },
+      { title: "Audit Logs", href: "/audit-logs", icon: <Scroll size={18} /> },
     ],
   },
 ];
@@ -86,18 +85,18 @@ export function Sidebar() {
   return (
     <motion.aside
       initial={false}
-      animate={{ width: isCollapsed ? 72 : 280 }}
+      animate={{ width: isCollapsed ? 68 : 240 }}
       transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#ECECEC]",
-        "bg-white text-[#111111]"
+        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#1a1a1a]",
+        "bg-black text-[#eaeaea]"
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between border-b border-[#ECECEC] px-5">
+      <div className="flex h-14 items-center justify-between border-b border-[#1a1a1a] px-5">
         <Link href="/" className="flex items-center gap-2.5 overflow-hidden">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#4F772D]">
-            <Leaf size={16} className="text-white" />
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#5CE65C]">
+            <Leaf size={14} weight="bold" className="text-black" />
           </div>
           <AnimatePresence>
             {!isCollapsed && (
@@ -106,7 +105,7 @@ export function Sidebar() {
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.15 }}
-                className="whitespace-nowrap text-[15px] font-semibold text-[#111111] tracking-tight"
+                className="whitespace-nowrap text-[14px] font-semibold text-white tracking-tight"
               >
                 T2T Admin
               </motion.span>
@@ -116,15 +115,15 @@ export function Sidebar() {
         <button
           onClick={toggle}
           className={cn(
-            "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-            "text-[#6B7280] hover:bg-[#FAFAFA] hover:text-[#111111]",
+            "flex h-6 w-6 shrink-0 items-center justify-center rounded",
+            "text-neutral-500 hover:bg-neutral-900 hover:text-white",
             "transition-colors",
             isCollapsed && "mx-auto"
           )}
           title="Toggle sidebar (⌘[)"
         >
           <motion.div animate={{ rotate: isCollapsed ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronLeft size={16} />
+            <CaretLeft size={14} />
           </motion.div>
         </button>
       </div>
@@ -134,12 +133,12 @@ export function Sidebar() {
         {navGroups.map((group, groupIndex) => (
           <div key={group.label} className={cn(groupIndex > 0 && "mt-5")}>
             {!isCollapsed && (
-              <p className="mb-2 px-3 text-[11px] font-semibold tracking-wider text-[#6B7280]">
+              <p className="mb-2 px-3 text-[10px] font-semibold tracking-wider text-neutral-500">
                 {group.label}
               </p>
             )}
             {isCollapsed && groupIndex > 0 && (
-              <div className="mx-3 mb-2 border-t border-[#ECECEC]" />
+              <div className="mx-3 mb-2 border-t border-[#1a1a1a]" />
             )}
             <ul className="space-y-1">
               {group.items.map((item) => {
@@ -149,22 +148,22 @@ export function Sidebar() {
                     <Link
                       href={item.href}
                       className={cn(
-                        "group relative flex items-center gap-3 rounded-[10px] py-2 px-3 text-sm font-medium transition-all duration-150",
+                        "group relative flex items-center gap-3 rounded py-1.5 px-3 text-[13px] font-medium transition-all duration-150",
                         active
-                          ? "bg-[#F5F5F5] text-black"
-                          : "text-[#6B7280] hover:bg-[#FAFAFA] hover:text-[#111111]",
+                          ? "bg-[#111111] text-white border border-[#222222]"
+                          : "text-neutral-400 hover:bg-[#0a0a0a] hover:text-white border border-transparent",
                         isCollapsed && "justify-center px-0"
                       )}
                       title={isCollapsed ? item.title : undefined}
                     >
-                      <span className={cn("shrink-0", active ? "text-[#4F772D]" : "text-[#6B7280] group-hover:text-[#111111]")}>
+                      <span className={cn("shrink-0", active ? "text-[#5CE65C]" : "text-neutral-500 group-hover:text-white")}>
                         {item.icon}
                       </span>
                       {!isCollapsed && (
                         <>
                           <span className="truncate">{item.title}</span>
                           {item.shortcut && (
-                            <span className="ml-auto text-[11px] text-[#9CA3AF] opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="ml-auto text-[10px] text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity">
                               {item.shortcut}
                             </span>
                           )}
@@ -181,11 +180,11 @@ export function Sidebar() {
 
       {/* Footer */}
       {!isCollapsed && (
-        <div className="border-t border-[#ECECEC] px-5 py-4">
-          <p className="text-[11px] font-semibold text-[#111111]">
+        <div className="border-t border-[#1a1a1a] px-5 py-3">
+          <p className="text-[10px] font-semibold text-neutral-400">
             Trash2Treasure Admin
           </p>
-          <p className="text-[10px] text-[#6B7280]">
+          <p className="text-[9px] text-neutral-600">
             Version 1.0.0
           </p>
         </div>

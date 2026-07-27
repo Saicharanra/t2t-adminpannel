@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { Warning } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 interface ConfirmationDialogProps {
@@ -43,30 +43,30 @@ export function ConfirmationDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
       {/* Dialog */}
-      <div className="relative z-10 w-full max-w-md rounded-xl border border-[var(--t2t-border)] bg-[var(--t2t-surface)] p-6 shadow-lg">
+      <div className="relative z-10 w-full max-w-md rounded border border-[#1a1a1a] bg-[#0a0a0a] p-6 shadow-2xl">
         <div className="flex items-start gap-4">
           {variant !== "default" && (
             <div
               className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border",
                 variant === "danger" &&
-                  "bg-[var(--t2t-danger-light)] text-[var(--t2t-danger)]",
+                  "bg-red-950/30 text-red-500 border-red-900/30",
                 variant === "warning" &&
-                  "bg-[var(--t2t-warning-light)] text-[var(--t2t-warning)]"
+                  "bg-amber-950/30 text-amber-500 border-amber-900/30"
               )}
             >
-              <AlertTriangle size={20} />
+              <Warning size={18} />
             </div>
           )}
           <div>
-            <h3 className="text-base font-semibold text-[var(--t2t-text)]">
+            <h3 className="text-[14px] font-semibold text-white">
               {title}
             </h3>
-            <p className="mt-1.5 text-sm text-[var(--t2t-text-secondary)]">
+            <p className="mt-1.5 text-[12px] text-neutral-400 leading-relaxed">
               {description}
             </p>
           </div>
@@ -75,7 +75,7 @@ export function ConfirmationDialog({
           <button
             onClick={onClose}
             disabled={loading}
-            className="rounded-lg border border-[var(--t2t-border)] bg-[var(--t2t-surface)] px-4 py-2 text-sm font-medium text-[var(--t2t-text)] hover:bg-[var(--t2t-bg)] transition-colors"
+            className="rounded border border-[#1a1a1a] bg-[#0a0a0a] px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-[#121212] transition-colors"
           >
             {cancelLabel}
           </button>
@@ -83,12 +83,12 @@ export function ConfirmationDialog({
             onClick={handleConfirm}
             disabled={loading}
             className={cn(
-              "rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50",
+              "rounded px-3.5 py-1.5 text-[12px] font-medium text-white transition-colors disabled:opacity-50",
               variant === "danger"
-                ? "bg-[var(--t2t-danger)] hover:bg-red-700"
+                ? "bg-red-600 hover:bg-red-700"
                 : variant === "warning"
-                  ? "bg-[var(--t2t-warning)] hover:bg-amber-600"
-                  : "bg-[var(--t2t-primary)] hover:bg-[var(--t2t-primary-hover)]"
+                  ? "bg-amber-500 hover:bg-amber-600"
+                  : "bg-[#f38020] hover:bg-[#ea580c]"
             )}
           >
             {loading ? "Processing…" : confirmLabel}

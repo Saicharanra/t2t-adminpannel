@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Leaf, Loader2, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Leaf, CircleNotch, ArrowClockwise, CheckCircle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
-export default function VerifyOtpPage() {
+function VerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "admin@t2t.com";
@@ -112,15 +112,15 @@ export default function VerifyOtpPage() {
     <div className="space-y-6">
       <div className="text-center sm:text-left space-y-2">
         <div className="flex justify-center sm:justify-start">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#111827] text-white">
-            <Leaf size={20} />
+          <div className="flex h-9 w-9 items-center justify-center rounded bg-[#111111] border border-[#222222] text-white">
+            <Leaf size={18} weight="bold" />
           </div>
         </div>
-        <h2 className="text-[30px] font-bold tracking-tight text-[#111827]">
+        <h2 className="text-[24px] font-bold tracking-tight text-white">
           Verify code
         </h2>
-        <p className="text-[14px] text-[#6B7280] leading-relaxed">
-          We sent a 6-digit security code to <strong className="text-[#111827]">{email}</strong>. It will expire in {formatTime(timer)}.
+        <p className="text-[13px] text-neutral-500 leading-relaxed">
+          We sent a 6-digit security code to <strong className="text-neutral-300">{email}</strong>. It will expire in {formatTime(timer)}.
         </p>
       </div>
 
@@ -140,21 +140,21 @@ export default function VerifyOtpPage() {
               onChange={(e) => handleChange(e.target, index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               onPaste={handlePaste}
-              className="h-14 w-12 text-center text-xl font-bold rounded-lg border border-[#EAEAEA] bg-white focus:border-[#4F772D] focus:outline-none focus:ring-1 focus:ring-[#4F772D] transition-all"
+              className="h-10 w-10 text-center text-lg font-bold rounded border border-[#1a1a1a] bg-[#0a0a0a] text-white focus:border-[#5CE65C] focus:outline-none transition-all"
             />
           ))}
         </div>
 
-        <div className="flex items-center justify-between text-[13px]">
-          <span className="text-[#6B7280]">
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="text-neutral-500">
             Didn&apos;t receive it?
           </span>
           <button
             type="button"
             onClick={handleResend}
-            className="flex items-center gap-1 font-semibold text-[#4F772D] hover:underline"
+            className="flex items-center gap-1 font-semibold text-[#5CE65C] hover:text-[#4cd14c] hover:underline"
           >
-            <RefreshCw size={12} />
+            <ArrowClockwise size={12} />
             Resend Code
           </button>
         </div>
@@ -162,18 +162,32 @@ export default function VerifyOtpPage() {
         <button
           type="submit"
           disabled={loading || attempts >= 5}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#4F772D] text-sm font-semibold text-white shadow-sm hover:bg-[#066328] transition-colors disabled:opacity-50"
+          className="flex h-9 w-full items-center justify-center gap-1.5 rounded bg-[#fefefe] text-xs font-semibold text-black shadow-sm hover:bg-[#e5e5e5] transition-colors disabled:opacity-50"
         >
           {loading ? (
-            <Loader2 size={16} className="animate-spin" />
+            <CircleNotch size={14} className="animate-spin text-black" />
           ) : (
             <>
               Verify and login
-              <CheckCircle2 size={16} />
+              <CheckCircle size={14} />
             </>
           )}
         </button>
       </form>
     </div>
+  );
+}
+
+export default function VerifyOtpPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center p-12">
+          <CircleNotch size={24} className="animate-spin text-[#5CE65C]" />
+        </div>
+      }
+    >
+      <VerifyOtpContent />
+    </Suspense>
   );
 }
