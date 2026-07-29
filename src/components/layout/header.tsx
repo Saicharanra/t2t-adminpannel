@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { MagnifyingGlass, Bell, Sun, Moon, SignOut } from "@phosphor-icons/react";
+import { MagnifyingGlass, Bell, Sun, Moon, SignOut, ArrowSquareOut } from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/providers/sidebar-provider";
@@ -35,6 +35,7 @@ export function Header() {
   }, []);
 
   const pageTitle = routeTitles[pathname] || "Admin Panel";
+  const businessPanelUrl = process.env.NEXT_PUBLIC_BUSINESS_PANEL_URL || "http://localhost:3001";
 
   return (
     <motion.header
@@ -67,8 +68,18 @@ export function Header() {
           </div>
         </div>
 
-        {/* Right: User Actions */}
+        {/* Right: User Actions & Seamless Panel Switcher */}
         <div className="flex items-center gap-3">
+          {/* Switch to Business Panel Button */}
+          <a
+            href={businessPanelUrl}
+            className="hidden sm:flex items-center gap-1.5 rounded border border-[var(--t2t-border)] bg-[var(--t2t-surface)] px-2.5 py-1 text-xs font-medium text-[#14EF10] hover:bg-[#14EF10]/10 transition-colors"
+            title="Switch to Business Console"
+          >
+            <ArrowSquareOut size={13} />
+            <span>Switch to Business Panel</span>
+          </a>
+
           {/* Status Badge */}
           <div className="flex items-center gap-1.5 rounded border border-[var(--t2t-border)] bg-[var(--t2t-surface)] px-2 py-0.5">
             <span className="relative flex h-1.5 w-1.5">
