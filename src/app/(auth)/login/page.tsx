@@ -5,10 +5,22 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
-import { Leaf, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck } from "lucide-react";
+import { 
+  Leaf, 
+  Eye, 
+  EyeOff, 
+  Loader2, 
+  ArrowRight, 
+  ShieldCheck, 
+  Mail, 
+  Lock,
+  Sparkles,
+  CheckCircle2
+} from "lucide-react";
 import { toast } from "sonner";
 import { requestAdminOtpAction } from "../actions";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 const loginSchema = zod.object({
   email: zod.string().email("Please enter a valid administrator email address"),
@@ -62,7 +74,6 @@ export default function LoginPage() {
   const togglePasswordVisibility = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.preventDefault();
     setShowPassword((prev) => !prev);
-    // Keep focus after toggle
     setTimeout(() => {
       passwordInputRef.current?.focus();
     }, 0);
@@ -71,71 +82,82 @@ export default function LoginPage() {
   const { ref: passwordRef, ...passwordRegister } = register("password");
 
   return (
-    <div className="w-full rounded-2xl border border-[#E5E7EB] bg-white p-8 shadow-sm">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="w-full rounded-2xl border border-white/10 bg-[#0A0A0C]/90 p-8 sm:p-9 shadow-2xl backdrop-blur-xl relative overflow-hidden"
+    >
+      {/* Top Ambient Highlight Border */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#14EF10]/40 to-transparent" />
+
       {/* Top Header & Branding */}
       <div className="flex flex-col items-center text-center">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#4F772D] text-white shadow-xs">
-            <Leaf size={24} className="fill-current" />
-          </div>
-          <div className="text-left">
-            <div className="flex items-center gap-2">
-              <span className="text-[18px] font-bold tracking-tight text-[#111827]">
-                T2T Admin
-              </span>
-              <span className="flex items-center gap-1 rounded-full bg-[#F4F7F2] border border-[#A3B18A]/30 px-2 py-0.5 text-[10px] font-semibold text-[#4F772D] uppercase tracking-wider">
-                <ShieldCheck size={12} />
-                Operations Center
-              </span>
-            </div>
-            <p className="text-[12px] font-medium text-[#6B7280]">
-              Trash2Treasure Ecosystem
-            </p>
+        {/* Logo Badge */}
+        <div className="group relative flex items-center justify-center">
+          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#14EF10]/30 to-[#4F772D]/30 blur-md opacity-75 group-hover:opacity-100 transition duration-300" />
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0D140C] border border-[#14EF10]/40 text-[#14EF10] shadow-inner">
+            <Leaf size={28} className="fill-current text-[#14EF10] drop-shadow-[0_0_8px_rgba(20,239,16,0.6)]" />
           </div>
         </div>
 
-        <div className="mt-8 space-y-1">
-          <h1 className="text-[26px] font-bold tracking-tight text-[#111827]">
+        {/* Title & Status */}
+        <div className="mt-5 flex flex-col items-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#14EF10]/10 border border-[#14EF10]/30 px-3 py-1 text-[11px] font-semibold text-[#14EF10] tracking-wide">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#14EF10] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#14EF10]"></span>
+            </span>
+            <ShieldCheck size={13} />
+            <span>Operations Portal</span>
+          </div>
+
+          <h1 className="mt-3 text-[26px] font-extrabold tracking-tight text-white sm:text-[28px]">
             Sign in to Admin
           </h1>
-          <p className="text-[14px] text-[#6B7280]">
-            Access the Trash2Treasure Administration Portal
+          <p className="mt-1.5 text-[13px] text-neutral-400 max-w-[320px] leading-relaxed">
+            Trash2Treasure Ecosystem Governance & Operations Management
           </p>
         </div>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-7 space-y-5">
         {/* Email Field */}
-        <div className="space-y-1.5">
-          <label className="text-[13px] font-semibold text-[#374151]">
+        <div className="space-y-2">
+          <label className="block text-[13px] font-medium text-neutral-300">
             Admin Email Address
           </label>
-          <input
-            {...register("email")}
-            type="email"
-            autoComplete="username"
-            className="h-[52px] w-full rounded-[12px] border border-[#D1D5DB] bg-white px-4 text-[14px] text-[#111827] focus:border-[#4F772D] focus:ring-2 focus:ring-[#4F772D]/20 focus:outline-none transition-colors"
-          />
+          <div className="relative flex items-center">
+            <Mail size={18} className="absolute left-3.5 text-neutral-500 pointer-events-none" />
+            <input
+              {...register("email")}
+              type="email"
+              autoComplete="username"
+              placeholder="admin@t2t.com"
+              className="h-[48px] w-full rounded-xl border border-white/10 bg-[#121216] pl-10 pr-4 text-[14px] text-white placeholder:text-neutral-600 focus:border-[#14EF10] focus:ring-2 focus:ring-[#14EF10]/20 focus:outline-none transition-all duration-200"
+            />
+          </div>
           {errors.email && (
-            <p className="text-[12px] font-medium text-red-500">{errors.email.message}</p>
+            <p className="text-[12px] font-medium text-red-400 pl-1">{errors.email.message}</p>
           )}
         </div>
 
-        {/* Password Field with Eye/EyeOff Toggle */}
-        <div className="space-y-1.5">
+        {/* Password Field */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-[13px] font-semibold text-[#374151]">
+            <label className="block text-[13px] font-medium text-neutral-300">
               Password
             </label>
             <Link
               href="/forgot-password"
-              className="text-[12px] font-medium text-[#4F772D] hover:underline"
+              className="text-[12px] font-medium text-[#14EF10] hover:text-[#10d00d] hover:underline transition-colors"
             >
-              Forgot Password?
+              Forgot password?
             </Link>
           </div>
           <div className="relative flex items-center w-full">
+            <Lock size={18} className="absolute left-3.5 text-neutral-500 pointer-events-none" />
             <input
               {...passwordRegister}
               ref={(e) => {
@@ -144,7 +166,8 @@ export default function LoginPage() {
               }}
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
-              className="h-[52px] w-full rounded-[12px] border border-[#D1D5DB] bg-white pl-4 pr-12 text-[14px] text-[#111827] focus:border-[#4F772D] focus:ring-2 focus:ring-[#4F772D]/20 focus:outline-none transition-colors"
+              placeholder="••••••••••••"
+              className="h-[48px] w-full rounded-xl border border-white/10 bg-[#121216] pl-10 pr-11 text-[14px] text-white placeholder:text-neutral-600 focus:border-[#14EF10] focus:ring-2 focus:ring-[#14EF10]/20 focus:outline-none transition-all duration-200"
             />
             <button
               type="button"
@@ -155,53 +178,65 @@ export default function LoginPage() {
                 }
               }}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-2 flex h-[44px] w-[44px] items-center justify-center rounded-lg text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] transition-colors cursor-pointer focus:outline-none"
+              className="absolute right-2 flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer focus:outline-none"
             >
               {showPassword ? (
-                <EyeOff size={18} className="transition-transform duration-150 active:scale-95" />
+                <EyeOff size={16} className="transition-transform duration-150 active:scale-95" />
               ) : (
-                <Eye size={18} className="transition-transform duration-150 active:scale-95" />
+                <Eye size={16} className="transition-transform duration-150 active:scale-95" />
               )}
             </button>
           </div>
           {errors.password && (
-            <p className="text-[12px] font-medium text-red-500">{errors.password.message}</p>
+            <p className="text-[12px] font-medium text-red-400 pl-1">{errors.password.message}</p>
           )}
         </div>
 
-        {/* Remember Device */}
+        {/* Remember Device & Security */}
         <div className="flex items-center justify-between pt-1">
-          <label className="flex items-center gap-2.5 cursor-pointer">
+          <label className="flex items-center gap-2.5 cursor-pointer group">
             <input
               {...register("rememberDevice")}
               type="checkbox"
-              className="h-4 w-4 rounded border-[#D1D5DB] text-[#4F772D] focus:ring-[#4F772D]"
+              className="h-4 w-4 rounded border-white/20 bg-[#121216] text-[#14EF10] focus:ring-[#14EF10] focus:ring-offset-0 cursor-pointer accent-[#14EF10]"
             />
-            <span className="text-[13px] font-medium text-[#4B5563]">
+            <span className="text-[13px] text-neutral-400 group-hover:text-neutral-200 transition-colors">
               Remember this device
             </span>
           </label>
+
+          <span className="text-[11px] text-neutral-500 font-mono flex items-center gap-1">
+            <CheckCircle2 size={12} className="text-[#14EF10]" /> SSL Secure
+          </span>
         </div>
 
-        {/* Submit Action Button */}
+        {/* Action Button */}
         <button
           type="submit"
           disabled={loading}
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#4F772D] px-4 text-[15px] font-semibold text-white shadow-xs hover:bg-[#5A8533] active:bg-[#436625] disabled:opacity-60 transition-colors cursor-pointer mt-2"
+          className="group relative flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#14EF10] via-[#10d00d] to-[#059669] px-4 text-[14px] font-bold text-black shadow-[0_0_20px_rgba(20,239,16,0.35)] hover:shadow-[0_0_28px_rgba(20,239,16,0.5)] active:scale-[0.99] disabled:opacity-60 transition-all duration-200 cursor-pointer mt-3"
         >
           {loading ? (
             <>
-              <Loader2 size={18} className="animate-spin text-white" />
-              <span>Sending Code...</span>
+              <Loader2 size={18} className="animate-spin text-black" />
+              <span>Verifying Credentials...</span>
             </>
           ) : (
             <>
-              <span>Continue</span>
-              <ArrowRight size={18} />
+              <span>Sign In to Admin</span>
+              <ArrowRight size={18} className="transition-transform duration-200 group-hover:translate-x-1" />
             </>
           )}
         </button>
       </form>
-    </div>
+
+      {/* Footer Info */}
+      <div className="mt-8 border-t border-white/5 pt-5 text-center">
+        <p className="text-[11px] text-neutral-500 flex items-center justify-center gap-1.5">
+          <Sparkles size={12} className="text-[#14EF10]" />
+          Authorized administrator personnel only
+        </p>
+      </div>
+    </motion.div>
   );
 }

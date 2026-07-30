@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Leaf, Loader2, RefreshCw, ArrowLeft, ShieldCheck } from "lucide-react";
+import { Leaf, Loader2, RefreshCw, ArrowLeft, ShieldCheck, Lock, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { verifyAdminOtpAction, requestAdminOtpAction } from "../actions";
 import { maskEmail } from "@/lib/auth-crypto";
@@ -20,7 +20,6 @@ function VerifyOtpContent() {
   const [resendCooldown, setResendCooldown] = useState(30); // 30 seconds resend cooldown
   const [trustDevice, setTrustDevice] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
-  const [attempts, setAttempts] = useState(0);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -103,7 +102,6 @@ function VerifyOtpContent() {
         router.push("/");
       } else {
         triggerShake();
-        setAttempts((prev) => prev + 1);
         toast.error(res.error || "Invalid verification code.");
       }
     } catch (error) {
@@ -139,45 +137,40 @@ function VerifyOtpContent() {
     <motion.div
       animate={isShaking ? { x: [-10, 10, -10, 10, 0] } : {}}
       transition={{ duration: 0.4 }}
-      className="w-full rounded-2xl border border-[#E5E7EB] bg-white p-8 sm:p-10 shadow-sm"
+      className="w-full rounded-2xl border border-white/10 bg-[#0A0A0C]/90 p-8 sm:p-9 shadow-2xl backdrop-blur-xl relative overflow-hidden"
     >
+      {/* Top Ambient Highlight Border */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#14EF10]/40 to-transparent" />
+
       {/* Top Branding Header */}
       <div className="flex flex-col items-center text-center">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#4F772D] text-white shadow-xs">
-            <Leaf size={24} className="fill-current" />
-          </div>
-          <div className="text-left">
-            <div className="flex items-center gap-2">
-              <span className="text-[18px] font-bold tracking-tight text-[#111827]">
-                T2T Admin
-              </span>
-              <span className="flex items-center gap-1 rounded-full bg-[#F4F7F2] border border-[#A3B18A]/30 px-2 py-0.5 text-[10px] font-semibold text-[#4F772D] uppercase tracking-wider">
-                <ShieldCheck size={12} />
-                Security OTP
-              </span>
-            </div>
-            <p className="text-[12px] font-medium text-[#6B7280]">
-              Two-Factor Authentication
-            </p>
+        <div className="group relative flex items-center justify-center">
+          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#14EF10]/30 to-[#4F772D]/30 blur-md opacity-75 group-hover:opacity-100 transition duration-300" />
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0D140C] border border-[#14EF10]/40 text-[#14EF10] shadow-inner">
+            <Lock size={28} className="text-[#14EF10] drop-shadow-[0_0_8px_rgba(20,239,16,0.6)]" />
           </div>
         </div>
 
-        <div className="mt-8 space-y-1">
-          <h1 className="text-[26px] font-bold tracking-tight text-[#111827]">
-            Verify your email
+        <div className="mt-5 flex flex-col items-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#14EF10]/10 border border-[#14EF10]/30 px-3 py-1 text-[11px] font-semibold text-[#14EF10] tracking-wide">
+            <ShieldCheck size={13} />
+            <span>Two-Factor Security</span>
+          </div>
+
+          <h1 className="mt-3 text-[26px] font-extrabold tracking-tight text-white sm:text-[28px]">
+            Verify Email OTP
           </h1>
-          <p className="text-[14px] text-[#6B7280] leading-relaxed">
-            We've sent a secure 6-digit verification code to{" "}
-            <span className="font-semibold text-[#111827]">{maskEmail(email)}</span>
+          <p className="mt-1.5 text-[13px] text-neutral-400 max-w-[340px] leading-relaxed">
+            Sent a secure 6-digit code to{" "}
+            <span className="font-semibold text-white font-mono">{maskEmail(email)}</span>
           </p>
         </div>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+      <form onSubmit={handleSubmit} className="mt-7 space-y-6">
         {/* Six Digit OTP Input Array */}
-        <div className="flex items-center justify-center gap-2 sm:gap-3">
+        <div className="flex items-center justify-center gap-2 sm:gap-2.5">
           {otp.map((digit, idx) => (
             <input
               key={idx}
@@ -191,32 +184,32 @@ function VerifyOtpContent() {
               onChange={(e) => handleOtpChange(idx, e.target.value)}
               onKeyDown={(e) => handleKeyDown(idx, e)}
               onPaste={idx === 0 ? handlePaste : undefined}
-              className="h-14 w-12 sm:w-14 rounded-xl border border-[#E5E7EB] bg-white text-center text-[22px] font-bold text-[#111827] focus:border-[#4F772D] focus:outline-none focus:ring-2 focus:ring-[#4F772D]/20 transition-all shadow-2xs"
+              className="h-13 w-11 sm:w-13 rounded-xl border border-white/10 bg-[#121216] text-center text-[20px] font-bold text-white focus:border-[#14EF10] focus:outline-none focus:ring-2 focus:ring-[#14EF10]/20 transition-all shadow-inner"
             />
           ))}
         </div>
 
         {/* Live Timer Countdown */}
-        <div className="flex items-center justify-between text-[13px] border-y border-[#F3F4F6] py-3 text-[#6B7280]">
+        <div className="flex items-center justify-between text-[13px] rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-neutral-400">
           <span>Code Expiry Status:</span>
           {timer > 0 ? (
-            <span className="font-semibold text-[#4F772D]">
-              Expires in {formatTimer(timer)}
+            <span className="font-mono font-semibold text-[#14EF10]">
+              {formatTimer(timer)}
             </span>
           ) : (
-            <span className="font-semibold text-red-600">Code expired</span>
+            <span className="font-semibold text-red-400">Code expired</span>
           )}
         </div>
 
         {/* Trust Device Checkbox */}
-        <label className="flex items-center gap-2.5 cursor-pointer">
+        <label className="flex items-center gap-2.5 cursor-pointer group">
           <input
             type="checkbox"
             checked={trustDevice}
             onChange={(e) => setTrustDevice(e.target.checked)}
-            className="h-4 w-4 rounded border-[#D1D5DB] text-[#4F772D] focus:ring-[#4F772D]"
+            className="h-4 w-4 rounded border-white/20 bg-[#121216] text-[#14EF10] focus:ring-[#14EF10] focus:ring-offset-0 cursor-pointer accent-[#14EF10]"
           />
-          <span className="text-[13px] font-medium text-[#374151]">
+          <span className="text-[13px] text-neutral-300 group-hover:text-white transition-colors">
             Trust this device for 30 days
           </span>
         </label>
@@ -225,33 +218,33 @@ function VerifyOtpContent() {
         <button
           type="submit"
           disabled={loading || otp.join("").length < 6}
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[12px] bg-[#4F772D] px-4 text-[15px] font-semibold text-white shadow-xs hover:bg-[#5A8533] active:bg-[#436625] disabled:opacity-60 transition-colors cursor-pointer"
+          className="group relative flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#14EF10] via-[#10d00d] to-[#059669] px-4 text-[14px] font-bold text-black shadow-[0_0_20px_rgba(20,239,16,0.35)] hover:shadow-[0_0_28px_rgba(20,239,16,0.5)] active:scale-[0.99] disabled:opacity-60 transition-all duration-200 cursor-pointer"
         >
           {loading ? (
             <>
-              <Loader2 size={18} className="animate-spin text-white" />
+              <Loader2 size={18} className="animate-spin text-black" />
               <span>Verifying Code...</span>
             </>
           ) : (
-            <span>Verify & Sign In</span>
+            <span>Verify & Authenticate</span>
           )}
         </button>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-2 text-[13px]">
+        <div className="flex items-center justify-between pt-2 text-[13px] border-t border-white/5">
           <Link
             href="/login"
-            className="flex items-center gap-1.5 font-medium text-[#6B7280] hover:text-[#111827] transition-colors"
+            className="flex items-center gap-1.5 font-medium text-neutral-400 hover:text-white transition-colors"
           >
             <ArrowLeft size={14} />
-            <span>Use another account</span>
+            <span>Back to Sign In</span>
           </Link>
 
           <button
             type="button"
             onClick={handleResend}
             disabled={resendCooldown > 0}
-            className="flex items-center gap-1.5 font-medium text-[#4F772D] hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer"
+            className="flex items-center gap-1.5 font-semibold text-[#14EF10] hover:text-[#10d00d] hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer"
           >
             <RefreshCw size={13} className={resendCooldown > 0 ? "animate-spin" : ""} />
             <span>
@@ -268,7 +261,7 @@ export default function VerifyOtpPage() {
   return (
     <Suspense
       fallback={
-        <div className="w-full rounded-2xl border border-[#E5E7EB] bg-white p-12 text-center text-[#6B7280]">
+        <div className="w-full rounded-2xl border border-white/10 bg-[#0A0A0C]/90 p-12 text-center text-neutral-400">
           Loading verification portal...
         </div>
       }
