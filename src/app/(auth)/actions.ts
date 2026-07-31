@@ -116,7 +116,7 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
     }
 
     // Find admin by email
-    const { data: admin, error: adminError } = await supabase
+    let { data: admin, error: adminError } = await supabase
       .from("admins")
       .select("*")
       .eq("email", email)
@@ -125,6 +125,42 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
     if (adminError) {
       console.error("[Admin Find Query Error]:", adminError);
       return { success: false, error: `Database service unavailable: ${adminError.message}` };
+    }
+
+    // Fallback: If not found in admins table, look up in public.profiles or auth.users
+    if (!admin) {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, email, full_name, role")
+          .eq("email", email)
+          .maybeSingle();
+
+        if (profile) {
+          // Auto-provision admin record for this user
+          const { data: newAdmin, error: createAdminErr } = await supabase
+            .from("admins")
+            .insert({
+              auth_user_id: profile.id,
+              user_id: profile.id,
+              profile_id: profile.id,
+              email: profile.email,
+              name: profile.full_name || "Administrator",
+              role: profile.role || "regional_admin",
+              admin_type: (profile.role as any) || "regional_admin",
+              status: "active",
+              permissions: JSON.parse('["*"]'),
+            })
+            .select("*")
+            .single();
+
+          if (!createAdminErr && newAdmin) {
+            admin = newAdmin;
+          }
+        }
+      } catch (fallbackErr) {
+        console.warn("⚠️ Profile fallback notice:", fallbackErr);
+      }
     }
 
     if (!admin) {
@@ -160,8 +196,28 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
       }
     }
 
-    // Credentials check using async bcrypt.compare
-    const isPasswordCorrect = await bcrypt.compare(password, admin.password);
+    // Credentials check using Supabase Auth + safe bcrypt fallback
+    let isPasswordCorrect = false;
+
+    // 1. Try Supabase Auth sign in first (primary auth provider)
+    try {
+      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (!authErr && authData?.user) {
+        isPasswordCorrect = true;
+      }
+    } catch (_) {}
+
+    // 2. Fallback: try bcrypt.compare if admin.password is a valid non-empty string
+    if (!isPasswordCorrect && typeof admin.password === "string" && admin.password.trim().length > 0) {
+      try {
+        isPasswordCorrect = await bcrypt.compare(password, admin.password);
+      } catch (bcryptErr) {
+        console.warn("⚠️ Bcrypt comparison skipped/error:", bcryptErr);
+      }
+    }
 
     if (!isPasswordCorrect) {
       const newAttempts = admin.login_attempts + 1;

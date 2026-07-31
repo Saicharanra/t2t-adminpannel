@@ -28,14 +28,14 @@ export async function getBusinesses(filters: BusinessFilters = {}) {
       query = query.eq("category", filters.category);
     }
 
-    const { data: businesses, error } = await query.order("joined_at", { ascending: false });
+    const { data: businesses, error } = await query.order("created_at", { ascending: false });
 
     if (error) throw error;
 
     // Map business fields if needed (e.g. joined_at to joinedAt, document_url to documentUrl)
     return (businesses || []).map((biz: any) => ({
       ...biz,
-      joinedAt: biz.joined_at,
+      joinedAt: biz.created_at,
       documentUrl: biz.document_url,
     }));
   } catch (error) {

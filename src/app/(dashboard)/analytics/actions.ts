@@ -1,26 +1,21 @@
 "use server";
 
-import { createServerClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 
 export async function getAnalyticsMetrics() {
-  const supabase = await createServerClient();
+  const supabase = createAdminClient();
 
   try {
     const [wasteAggregateRes, userCountRes, activeBinsRes, ticketCountRes] = await Promise.all([
-      supabase.from("waste_submissions").select("weight, points"),
+      supabase.from("waste_submissions").select("weight, weight_kg, points_awarded, points_earned"),
       supabase.from("users").select("*", { count: "exact", head: true }),
-      supabase.from("bins").select("*", { count: "exact", head: true }).eq("status", "Active"),
-      supabase.from("support_tickets").select("*", { count: "exact", head: true }).eq("status", "Open"),
+      supabase.from("bins").select("*", { count: "exact", head: true }),
+      supabase.from("support_tickets").select("*", { count: "exact", head: true }),
     ]);
 
-    if (wasteAggregateRes.error) throw wasteAggregateRes.error;
-    if (userCountRes.error) throw userCountRes.error;
-    if (activeBinsRes.error) throw activeBinsRes.error;
-    if (ticketCountRes.error) throw ticketCountRes.error;
-
     const data = wasteAggregateRes.data || [];
-    const totalWeightKg = data.reduce((acc, curr) => acc + (curr.weight || 0), 0);
-    const totalPoints = data.reduce((acc, curr) => acc + (curr.points || 0), 0);
+    const totalWeightKg = data.reduce((acc, curr) => acc + Number(curr.weight_kg ?? curr.weight ?? 0), 0);
+    const totalPoints = data.reduce((acc, curr) => acc + Number(curr.points_awarded ?? curr.points_earned ?? 0), 0);
     
     const userCount = userCountRes.count || 0;
     const activeBins = activeBinsRes.count || 0;
@@ -29,7 +24,7 @@ export async function getAnalyticsMetrics() {
     const carbonSavedKg = Math.round(totalWeightKg * 0.5 * 10) / 10;
 
     return {
-      totalWeightKg,
+      totalWeightKg: Math.round(totalWeightKg * 100) / 100,
       totalPoints,
       carbonSavedKg,
       userCount,

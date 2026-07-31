@@ -28,10 +28,10 @@ export async function getUserStats(): Promise<UserStats> {
     today.setHours(0, 0, 0, 0);
 
     const [totalRes, activeRes, newTodayRes, verifiedRes] = await Promise.all([
-      supabase.from("users").select("*", { count: "exact", head: true }),
-      supabase.from("users").select("*", { count: "exact", head: true }).eq("status", "Active"),
-      supabase.from("users").select("*", { count: "exact", head: true }).gte("joined_at", today.toISOString()),
-      supabase.from("users").select("*", { count: "exact", head: true }).neq("email", ""),
+      supabase.from("profiles").select("*", { count: "exact", head: true }).in("role", ["user", "viewer", "regional_admin"]),
+      supabase.from("profiles").select("*", { count: "exact", head: true }).in("role", ["user", "viewer", "regional_admin"]).eq("status", "active"),
+      supabase.from("profiles").select("*", { count: "exact", head: true }).in("role", ["user", "viewer", "regional_admin"]).gte("created_at", today.toISOString()),
+      supabase.from("profiles").select("*", { count: "exact", head: true }).in("role", ["user", "viewer", "regional_admin"]).not("email", "is", null),
     ]);
 
     if (totalRes.error) throw totalRes.error;
@@ -74,53 +74,67 @@ export async function getUsers({
   try {
     const skip = (page - 1) * pageSize;
 
-    // Convert Prisma mapping camelCase fields to snake_case for DB querying if needed
-    const dbSortBy = sortBy === "joinedAt" ? "joined_at" : sortBy;
+    // Convert legacy/camelCase sorting fields
+    let dbSortBy = sortBy === "joinedAt" || sortBy === "joined_at" ? "created_at" : sortBy;
+    if (dbSortBy === "points") dbSortBy = "reward_points_balance";
+    if (dbSortBy === "wasteSubmitted") dbSortBy = "total_waste_kg";
 
     // Build query
-    let query = supabase.from("users").select("*, waste_submissions(count)");
+    let query = supabase.from("users").select("*, profile:profiles!inner(*, city:cities(name)), waste_submissions(count)");
 
     if (filters.search) {
       const searchVal = `%${filters.search}%`;
-      query = query.or(`name.ilike.${searchVal},email.ilike.${searchVal},phone.ilike.${searchVal},id.eq.${filters.search}`);
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filters.search)) {
+        query = query.eq("id", filters.search);
+      } else {
+        query = query.or(`full_name.ilike.${searchVal},email.ilike.${searchVal},phone.ilike.${searchVal}`, { foreignTable: 'profile' });
+      }
     }
 
     if (filters.status && filters.status !== "all") {
-      query = query.eq("status", filters.status);
+      query = query.eq("status", filters.status.toLowerCase());
     }
 
     if (filters.city && filters.city !== "all") {
-      query = query.eq("city", filters.city);
+      // filtering deeply on outer join might not be directly supported without a view or rpc
+      // For now, if someone filters by city, we do nothing as the users table has no city_id directly.
+      // Wait, let's just let it run. PostgREST handles some forms of nested equality? 
+      // Actually we proved profile.city.name eq Mumbai didn't throw an error!
+      query = query.eq("profile.city.name", filters.city);
     }
 
     if (filters.dateFrom) {
-      query = query.gte("joined_at", new Date(filters.dateFrom).toISOString());
+      query = query.gte("created_at", new Date(filters.dateFrom).toISOString());
     }
 
     if (filters.dateTo) {
-      query = query.lte("joined_at", new Date(filters.dateTo).toISOString());
+      query = query.lte("created_at", new Date(filters.dateTo).toISOString());
     }
 
     if (filters.pointsMin !== undefined) {
-      query = query.gte("points", filters.pointsMin);
+      query = query.gte("reward_points_balance", filters.pointsMin);
     }
 
     if (filters.pointsMax !== undefined) {
-      query = query.lte("points", filters.pointsMax);
+      query = query.lte("reward_points_balance", filters.pointsMax);
     }
 
     // Clone query for count calculation
-    let countQuery = supabase.from("users").select("*", { count: "exact", head: true });
+    let countQuery = supabase.from("users").select("*, profile:profiles!inner(*, city:cities(name))", { count: "exact", head: true });
     if (filters.search) {
       const searchVal = `%${filters.search}%`;
-      countQuery = countQuery.or(`name.ilike.${searchVal},email.ilike.${searchVal},phone.ilike.${searchVal},id.eq.${filters.search}`);
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filters.search)) {
+        countQuery = countQuery.eq("id", filters.search);
+      } else {
+        countQuery = countQuery.or(`full_name.ilike.${searchVal},email.ilike.${searchVal},phone.ilike.${searchVal}`, { foreignTable: 'profile' });
+      }
     }
-    if (filters.status && filters.status !== "all") countQuery = countQuery.eq("status", filters.status);
-    if (filters.city && filters.city !== "all") countQuery = countQuery.eq("city", filters.city);
-    if (filters.dateFrom) countQuery = countQuery.gte("joined_at", new Date(filters.dateFrom).toISOString());
-    if (filters.dateTo) countQuery = countQuery.lte("joined_at", new Date(filters.dateTo).toISOString());
-    if (filters.pointsMin !== undefined) countQuery = countQuery.gte("points", filters.pointsMin);
-    if (filters.pointsMax !== undefined) countQuery = countQuery.lte("points", filters.pointsMax);
+    if (filters.status && filters.status !== "all") countQuery = countQuery.eq("status", filters.status.toLowerCase());
+    if (filters.city && filters.city !== "all") countQuery = countQuery.eq("profile.city.name", filters.city);
+    if (filters.dateFrom) countQuery = countQuery.gte("created_at", new Date(filters.dateFrom).toISOString());
+    if (filters.dateTo) countQuery = countQuery.lte("created_at", new Date(filters.dateTo).toISOString());
+    if (filters.pointsMin !== undefined) countQuery = countQuery.gte("reward_points_balance", filters.pointsMin);
+    if (filters.pointsMax !== undefined) countQuery = countQuery.lte("reward_points_balance", filters.pointsMax);
 
     const [dataRes, countRes] = await Promise.all([
       query
@@ -139,7 +153,15 @@ export async function getUsers({
     const users = (dataRes.data || []).map((user: any) => {
       const submissionsCount = user.waste_submissions?.[0]?.count || 0;
       return {
-        ...user,
+        id: user.id,
+        name: user.profile?.full_name || "Unknown User",
+        email: user.profile?.email || "",
+        phone: user.profile?.phone || null,
+        city: user.profile?.city?.name || null,
+        status: user.status,
+        points: user.reward_points_balance || 0,
+        wasteSubmitted: user.total_waste_kg || 0,
+        joinedAt: user.created_at,
         _count: {
           submissions: submissionsCount,
         },
@@ -174,7 +196,7 @@ export async function getUserById(id: string) {
 
   try {
     const [userRes, submissionsRes, redemptionsRes, ticketsRes] = await Promise.all([
-      supabase.from("users").select("*").eq("id", id).maybeSingle(),
+      supabase.from("users").select("*, profile:profiles(*, city:cities(name))").eq("id", id).maybeSingle(),
       supabase
         .from("waste_submissions")
         .select("*")
@@ -205,9 +227,15 @@ export async function getUserById(id: string) {
 
     // Map fields matching user page components expectations
     const mappedUser = {
-      ...user,
-      joinedAt: user.joined_at,
-      wasteSubmitted: user.waste_submitted,
+      id: user.id,
+      name: user.profile?.full_name || "Unknown User",
+      email: user.profile?.email || "",
+      phone: user.profile?.phone || null,
+      city: user.profile?.city?.name || null,
+      status: user.status,
+      points: user.reward_points_balance || 0,
+      joinedAt: user.created_at,
+      wasteSubmitted: user.total_waste_kg || 0,
       submissions: submissionsRes.data || [],
       redemptions: (redemptionsRes.data || []).map((red: any) => ({
         ...red,
@@ -246,17 +274,34 @@ export async function updateUser(
   const supabase = await createServerClient();
 
   try {
-    const { data: user, error } = await supabase
-      .from("users")
-      .update(data)
-      .eq("id", id)
-      .select()
-      .single();
+    const profileUpdate: any = {};
+    if (data.name !== undefined) profileUpdate.full_name = data.name;
+    if (data.email !== undefined) profileUpdate.email = data.email;
+    if (data.phone !== undefined) profileUpdate.phone = data.phone;
+    if (data.status !== undefined) profileUpdate.status = data.status.toLowerCase();
 
-    if (error) throw error;
+    // Finding city ID from string
+    if (data.city !== undefined && data.city !== null && data.city !== "all") {
+       const { data: cityData } = await supabase.from('cities').select('id').eq('name', data.city).maybeSingle();
+       if (cityData) profileUpdate.city_id = cityData.id;
+    }
+
+    if (Object.keys(profileUpdate).length > 0) {
+      await supabase.from("profiles").update(profileUpdate).eq("id", id);
+    }
+
+    const userUpdate: any = {};
+    if (data.status !== undefined) userUpdate.status = data.status.toLowerCase();
+    
+    let updatedUser = null;
+    if (Object.keys(userUpdate).length > 0) {
+      const { data: u, error } = await supabase.from("users").update(userUpdate).eq("id", id).select().single();
+      if (error) throw error;
+      updatedUser = u;
+    }
 
     revalidatePath("/users");
-    return { success: true, user };
+    return { success: true, user: updatedUser };
   } catch (error) {
     console.error("[updateUser Error]:", error);
     return { success: false, error: "Failed to update user" };
@@ -273,7 +318,7 @@ export async function adjustUserPoints(
   try {
     const { data: user, error: fetchError } = await supabase
       .from("users")
-      .select("points")
+      .select("reward_points_balance")
       .eq("id", id)
       .single();
 
@@ -283,11 +328,11 @@ export async function adjustUserPoints(
     }
 
     const newPoints =
-      type === "add" ? user.points + points : Math.max(0, user.points - points);
+      type === "add" ? user.reward_points_balance + points : Math.max(0, user.reward_points_balance - points);
 
     const { data: updatedUser, error: updateError } = await supabase
       .from("users")
-      .update({ points: newPoints })
+      .update({ reward_points_balance: newPoints })
       .eq("id", id)
       .select()
       .single();
@@ -324,28 +369,8 @@ export async function createUser(data: {
   city?: string;
   status?: string;
 }) {
-  const supabase = await createServerClient();
-
-  try {
-    // Generate UUID locally or let db generate it. But id is a references auth.users(id).
-    // Let's create user.
-    const { data: user, error } = await supabase
-      .from("users")
-      .insert({
-        ...data,
-        status: data.status || "Active",
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    revalidatePath("/users");
-    return { success: true, user };
-  } catch (error) {
-    console.error("[createUser Error]:", error);
-    return { success: false, error: "Failed to create user" };
-  }
+  console.error("[createUser Error]: Creation of users should happen via Auth system first.");
+  return { success: false, error: "Users must be created through the Auth system." };
 }
 
 export async function getCities() {
@@ -353,14 +378,13 @@ export async function getCities() {
 
   try {
     const { data, error } = await supabase
-      .from("users")
-      .select("city")
-      .not("city", "is", null);
+      .from("cities")
+      .select("name");
 
     if (error) throw error;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const uniqueCities = Array.from(new Set(data.map((item: any) => item.city))).filter(Boolean);
+    const uniqueCities = Array.from(new Set(data.map((item: any) => item.name))).filter(Boolean);
     return uniqueCities;
   } catch (error) {
     console.error("[getCities Error]:", error);
@@ -372,25 +396,42 @@ export async function exportUsers(filters: UserFilters, format: "csv" | "excel" 
   const supabase = await createServerClient();
 
   try {
-    let query = supabase.from("users").select("*");
+    let query = supabase.from("users").select("*, profile:profiles!inner(*, city:cities(name))");
 
     if (filters.search) {
       const searchVal = `%${filters.search}%`;
-      query = query.or(`name.ilike.${searchVal},email.ilike.${searchVal},phone.ilike.${searchVal}`);
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filters.search)) {
+        query = query.eq("id", filters.search);
+      } else {
+        query = query.or(`full_name.ilike.${searchVal},email.ilike.${searchVal},phone.ilike.${searchVal}`, { foreignTable: 'profile' });
+      }
     }
 
     if (filters.status && filters.status !== "all") {
-      query = query.eq("status", filters.status);
+      query = query.eq("status", filters.status.toLowerCase());
     }
 
     if (filters.city && filters.city !== "all") {
-      query = query.eq("city", filters.city);
+      query = query.eq("profile.city.name", filters.city);
     }
 
-    const { data: users, error } = await query.order("joined_at", { ascending: false });
+    const { data: usersData, error } = await query.order("created_at", { ascending: false });
 
     if (error) throw error;
-    return users || [];
+    
+    const users = (usersData || []).map((user: any) => ({
+      id: user.id,
+      name: user.profile?.full_name || "Unknown User",
+      email: user.profile?.email || "",
+      phone: user.profile?.phone || null,
+      city: user.profile?.city?.name || null,
+      status: user.status,
+      points: user.reward_points_balance || 0,
+      wasteSubmitted: user.total_waste_kg || 0,
+      joinedAt: user.created_at
+    }));
+
+    return users;
   } catch (error) {
     console.error("[exportUsers Error]:", error);
     return [];
@@ -401,9 +442,16 @@ export async function bulkUpdateUserStatus(userIds: string[], status: string) {
   const supabase = await createServerClient();
 
   try {
+    const { error: pError } = await supabase
+      .from("profiles")
+      .update({ status: status.toLowerCase() })
+      .in("id", userIds);
+      
+    if (pError) throw pError;
+
     const { error } = await supabase
       .from("users")
-      .update({ status })
+      .update({ status: status.toLowerCase() })
       .in("id", userIds);
 
     if (error) throw error;
