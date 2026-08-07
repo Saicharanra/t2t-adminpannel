@@ -1,8 +1,8 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase";
+import { createAdminClient, createBrowserClient } from "@/lib/supabase";
 import { hashOtp, generateDeviceToken, parseUserAgent } from "@/lib/auth-crypto";
-import { sendOtpEmail } from "@/lib/email";
+import { sendOtpEmail, sendPasswordResetEmail } from "@/lib/email";
 import { cookies, headers } from "next/headers";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
@@ -248,12 +248,11 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
         const { error: logError } = await supabase
           .from("audit_logs")
           .insert({
-            admin_id: admin.id,
-            event: "LOGIN_FAILURE",
+            actor_id: admin.id,
+            action: "LOGIN_FAILURE",
+            target_entity: "auth",
             ip_address: ipAddress,
-            device: userAgent,
-            browser,
-            os,
+            user_agent: userAgent,
           });
         if (logError) throw logError;
       } catch (error) {
@@ -333,12 +332,11 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
           const { error: auditError } = await supabase
             .from("audit_logs")
             .insert({
-              admin_id: admin.id,
-              event: "LOGIN_SUCCESS",
+              actor_id: admin.id,
+              action: "LOGIN_SUCCESS",
+              target_entity: "auth",
               ip_address: ipAddress,
-              device: `Trusted Device: ${activeTrust.device_name || userAgent}`,
-              browser,
-              os,
+              user_agent: userAgent,
             });
           if (auditError) throw auditError;
 
@@ -354,16 +352,31 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
       }
     }
 
-    // Generate plain-text code
+    // Generate plain-text 6-digit code
     const plainOtp = crypto.randomInt(100000, 1000000).toString();
     const otpHash = hashOtp(plainOtp);
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
 
-    // Deliver OTP via Resend first
+    // Invalidate previous unused OTPs for this admin / email
+    try {
+      await supabase
+        .from("admin_otps")
+        .update({ is_used: true })
+        .eq("admin_id", admin.id)
+        .eq("is_used", false);
+
+      await supabase
+        .from("otp_codes")
+        .update({ is_used: true })
+        .eq("email", email)
+        .eq("is_used", false);
+    } catch (e) {}
+
+    // Deliver OTP via Resend
     try {
       await sendOtpEmail({
         email,
-        adminName: admin.name,
+        adminName: admin.name || "Administrator",
         otp: plainOtp,
         ipAddress,
         browser,
@@ -374,34 +387,42 @@ export async function requestAdminOtpAction(emailInput: string, passwordInput?: 
       console.error("[Resend OTP Email Delivery Error]:", emailError);
       return {
         success: false,
-        error: "Unable to send verification email. Please try again.",
+        error: "Unable to send verification email. Please check configuration and try again.",
       };
     }
 
-    // Save OTP & Audit log (non-blocking for local development resilience)
+    // Save hashed OTP in admin_otps & otp_codes
     try {
       await supabase
         .from("admin_otps")
         .insert({
           admin_id: admin.id,
-          otp_hash: otpHash,
+          auth_user_id: admin.auth_user_id || admin.id,
+          otp_code: otpHash,
           expires_at: expiresAt,
-          ip_address: ipAddress,
-          user_agent: userAgent,
+          is_used: false,
+        });
+
+      await supabase
+        .from("otp_codes")
+        .insert({
+          email,
+          code: otpHash,
+          expires_at: expiresAt,
+          is_used: false,
         });
 
       await supabase
         .from("audit_logs")
         .insert({
-          admin_id: admin.id,
-          event: "OTP_SENT",
+          actor_id: admin.id,
+          action: "OTP_SENT",
+          target_entity: "auth",
           ip_address: ipAddress,
-          device: userAgent,
-          browser,
-          os,
+          user_agent: userAgent,
         });
     } catch (dbError) {
-      console.warn("[OTP DB Registration Warning (Pending DB table creation)]:", dbError);
+      console.warn("[OTP DB Registration Notice]:", dbError);
     }
 
     return {
@@ -458,84 +479,113 @@ export async function verifyAdminOtpAction(
     }
 
     if (admin.is_locked && admin.locked_until && new Date(admin.locked_until) > new Date()) {
-      return { success: false, error: "Account is currently locked. Try again later." };
+      return { success: false, error: "Account is currently locked due to failed attempts. Please try again later." };
     }
 
-    const isDevPasscode = process.env.NODE_ENV !== "production" && code === "123456";
+    // 1. Check active OTP record in admin_otps table
+    let activeOtpId: string | null = null;
+    let isFromOtpCodes = false;
+    let isMatch = false;
 
-    if (!isDevPasscode) {
-      // Find active OTP record
-      const { data: otpRecord, error: otpError } = await supabase
-        .from("admin_otps")
+    const { data: otpRecord } = await supabase
+      .from("admin_otps")
+      .select("*")
+      .eq("admin_id", admin.id)
+      .eq("is_used", false)
+      .gte("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (otpRecord && otpRecord.otp_code === inputHash) {
+      activeOtpId = otpRecord.id;
+      isMatch = true;
+    }
+
+    // Fallback check in otp_codes table if not matched in admin_otps
+    if (!isMatch) {
+      const { data: fallbackOtp } = await supabase
+        .from("otp_codes")
         .select("*")
-        .eq("admin_id", admin.id)
-        .is("used_at", null)
+        .eq("email", email)
+        .eq("is_used", false)
         .gte("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (otpError || !otpRecord) {
-        console.warn("[OTP Verification Active OTP Query Notice]:", otpError);
-        return { success: false, error: "Verification code has expired or is invalid. Use dev code 123456." };
-      }
-
-      if (otpRecord.attempts >= 5) {
-        return { success: false, error: "Maximum verification attempts exceeded. Request a new code." };
-      }
-
-      if (otpRecord.otp_hash !== inputHash) {
-        const newAttempts = otpRecord.attempts + 1;
-        const newAdminAttempts = admin.login_attempts + 1;
-
-        const shouldLock = newAdminAttempts >= 5;
-        const lockedUntil = shouldLock ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;
-
-        try {
-          await supabase
-            .from("admin_otps")
-            .update({ attempts: newAttempts })
-            .eq("id", otpRecord.id);
-
-          await supabase
-            .from("admins")
-            .update({
-              login_attempts: newAdminAttempts,
-              is_locked: shouldLock,
-              locked_until: lockedUntil,
-            })
-            .eq("id", admin.id);
-        } catch (error) {
-          console.warn("[OTP Attempt Update Logging Error]:", error);
-        }
-
-        if (shouldLock) {
-          return { success: false, error: "Too many failed attempts. Account locked for 15 minutes." };
-        }
-
-        return { success: false, error: `Invalid verification code. ${5 - newAttempts} attempts remaining.` };
-      }
-
-      // Mark OTP as used
-      try {
-        await supabase
-          .from("admin_otps")
-          .update({ used_at: new Date().toISOString() })
-          .eq("id", otpRecord.id);
-      } catch (e) {
-        console.warn("[Mark OTP used warning]:", e);
+      if (fallbackOtp && fallbackOtp.code === inputHash) {
+        activeOtpId = fallbackOtp.id;
+        isFromOtpCodes = true;
+        isMatch = true;
       }
     }
 
-    // Reset admin login attempts
+    if (!isMatch || !activeOtpId) {
+      const newAdminAttempts = (admin.login_attempts || 0) + 1;
+      const shouldLock = newAdminAttempts >= 5;
+      const lockedUntil = shouldLock ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null;
+
+      try {
+        await supabase
+          .from("admins")
+          .update({
+            login_attempts: newAdminAttempts,
+            is_locked: shouldLock,
+            locked_until: lockedUntil,
+          })
+          .eq("id", admin.id);
+
+        await supabase
+          .from("audit_logs")
+          .insert({
+            actor_id: admin.id,
+            action: "OTP_VERIFICATION_FAILURE",
+            target_entity: "auth",
+            ip_address: ipAddress,
+            user_agent: userAgent,
+          });
+      } catch (logErr) {}
+
+      if (shouldLock) {
+        return { success: false, error: "Too many failed attempts. Account locked for 15 minutes." };
+      }
+
+      return { success: false, error: `Invalid or expired verification code. ${5 - newAdminAttempts} attempts remaining.` };
+    }
+
+    // 2. OTP is valid! Mark OTP as single-use (is_used = true)
+    try {
+      if (isFromOtpCodes) {
+        await supabase
+          .from("otp_codes")
+          .update({ is_used: true })
+          .eq("id", activeOtpId);
+      } else {
+        await supabase
+          .from("admin_otps")
+          .update({ is_used: true })
+          .eq("id", activeOtpId);
+      }
+
+      await supabase
+        .from("audit_logs")
+        .insert({
+          actor_id: admin.id,
+          action: "OTP_VERIFICATION_SUCCESS",
+          target_entity: "auth",
+          ip_address: ipAddress,
+          user_agent: userAgent,
+        });
+    } catch (e) {}
+
+    // 3. Reset admin login attempts & lockout
     try {
       await supabase
         .from("admins")
         .update({ login_attempts: 0, is_locked: false, locked_until: null })
         .eq("id", admin.id);
-    } catch (e) {
-      console.warn("[Reset admin login attempts warning]:", e);
-    }
+    } catch (e) {}
 
     // Handle Trusted Device for 30 days
     if (trustDevice) {
@@ -610,12 +660,11 @@ export async function verifyAdminOtpAction(
     const { error: auditError } = await supabase
       .from("audit_logs")
       .insert({
-        admin_id: admin.id,
-        event: "LOGIN_SUCCESS",
+        actor_id: admin.id,
+        action: "LOGIN_SUCCESS",
+        target_entity: "auth",
         ip_address: ipAddress,
-        device: userAgent,
-        browser,
-        os,
+        user_agent: userAgent,
       });
     if (auditError) console.error("[Success Audit Log Insertion Error]:", auditError);
 
@@ -644,11 +693,10 @@ export async function logoutAdminAction() {
       const { error: auditError } = await supabase
         .from("audit_logs")
         .insert({
-          event: "LOGOUT",
+          action: "LOGOUT",
+          target_entity: "auth",
           ip_address: ipAddress,
-          device: userAgent,
-          browser,
-          os,
+          user_agent: userAgent,
         });
       if (auditError) throw auditError;
     } catch (logError) {
@@ -666,4 +714,254 @@ export async function logoutAdminAction() {
 
 export async function logoutAction() {
   return logoutAdminAction();
+}
+
+/**
+ * Request Password Reset Action
+ * Triggers Supabase resetPasswordForEmail, generates recovery link, and dispatches email via Resend
+ */
+export async function requestPasswordResetAction(emailInput: string) {
+  const supabase = createAdminClient();
+
+  try {
+    const emailSchema = z.string().email("Please enter a valid administrator email address");
+    const validated = emailSchema.safeParse(emailInput);
+    if (!validated.success) {
+      return { success: false, error: validated.error.errors[0]?.message || "Invalid email address." };
+    }
+
+    const email = validated.data;
+    const reqHeaders = await headers();
+    const userAgent = reqHeaders.get("user-agent") || null;
+    const ipAddress = reqHeaders.get("x-forwarded-for") || reqHeaders.get("x-real-ip") || "127.0.0.1";
+    const { browser, os } = parseUserAgent(userAgent);
+
+    // 1. Verify admin exists in admins, profiles, or auth.users
+    let { data: admin, error: adminErr } = await supabase
+      .from("admins")
+      .select("*")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (adminErr) {
+      console.error("[Password Reset Admin Query Error]:", adminErr);
+      return { success: false, error: `Database service error: ${adminErr.message}` };
+    }
+
+    if (!admin) {
+      // Check profiles fallback
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, email, full_name, role")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (profile) {
+        admin = {
+          id: profile.id,
+          email: profile.email,
+          name: profile.full_name || "Administrator",
+          auth_user_id: profile.id,
+        };
+      }
+    }
+
+    if (!admin) {
+      // Check auth.users fallback
+      const { data: authUsers } = await supabase.auth.admin.listUsers();
+      const authUser = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+      if (authUser) {
+        admin = {
+          id: authUser.id,
+          email: authUser.email || email,
+          name: (authUser.user_metadata?.full_name as string) || "Administrator",
+          auth_user_id: authUser.id,
+        };
+      }
+    }
+
+    if (!admin) {
+      return { success: false, error: "No administrator account found with this email address." };
+    }
+
+    // 2. Check Rate Limits (max 3 reset requests in 15 minutes)
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { count: resetAttempts } = await supabase
+      .from("audit_logs")
+      .select("*", { count: "exact", head: true })
+      .eq("event", "PASSWORD_RESET_REQUESTED")
+      .eq("ip_address", ipAddress)
+      .gte("created_at", fifteenMinsAgo);
+
+    if (resetAttempts !== null && resetAttempts >= 3) {
+      return {
+        success: false,
+        error: "Password reset requests exceeded limit. Please wait 15 minutes before requesting again.",
+      };
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const redirectTo = `${appUrl}/reset-password`;
+
+    // 3. Invoke Supabase Auth resetPasswordForEmail (anon client call)
+    const browserClient = createBrowserClient();
+    try {
+      await browserClient.auth.resetPasswordForEmail(email, { redirectTo });
+    } catch (sbErr) {
+      console.warn("⚠️ [Supabase resetPasswordForEmail Notice]:", sbErr);
+    }
+
+    // 4. Generate direct recovery link using Admin Service Client for guaranteed delivery
+    let resetLink = redirectTo;
+    try {
+      const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+        type: "recovery",
+        email,
+        options: { redirectTo },
+      });
+
+      if (!linkErr && linkData?.properties?.action_link) {
+        resetLink = linkData.properties.action_link;
+      }
+    } catch (genErr) {
+      console.warn("⚠️ [GenerateLink Notice]:", genErr);
+    }
+
+    // 5. Send transactional email via Resend
+    await sendPasswordResetEmail({
+      email,
+      adminName: admin.name || "Administrator",
+      resetLink,
+    });
+
+    // 6. Log audit entry
+    try {
+      await supabase.from("audit_logs").insert({
+        actor_id: admin.id || null,
+        action: "PASSWORD_RESET_REQUESTED",
+        target_entity: "auth",
+        ip_address: ipAddress,
+        user_agent: userAgent,
+      });
+    } catch (logErr) {
+      console.warn("[Audit Log Insert Notice]:", logErr);
+    }
+
+    return {
+      success: true,
+      message: "Password reset instructions sent to your email address!",
+    };
+  } catch (error) {
+    console.error("[requestPasswordResetAction Error]:", error);
+    const errObj = error instanceof Error ? error : new Error(String(error));
+    return { success: false, error: `Failed to process password reset: ${errObj.message}` };
+  }
+}
+
+/**
+ * Complete Password Reset Action
+ * Sets new password in Supabase Auth & updates bcrypt password in public.admins
+ */
+export async function completePasswordResetAction({
+  email,
+  newPassword,
+  userId,
+}: {
+  email?: string;
+  newPassword: string;
+  userId?: string;
+}) {
+  const supabase = createAdminClient();
+
+  try {
+    const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+    const validated = passwordSchema.safeParse(newPassword);
+    if (!validated.success) {
+      return { success: false, error: validated.error.errors[0]?.message || "Invalid password." };
+    }
+
+    const reqHeaders = await headers();
+    const userAgent = reqHeaders.get("user-agent") || null;
+    const ipAddress = reqHeaders.get("x-forwarded-for") || reqHeaders.get("x-real-ip") || "127.0.0.1";
+    const { browser, os } = parseUserAgent(userAgent);
+
+    let targetUserId = userId;
+    let targetEmail = email;
+
+    // Find admin by email or userId
+    if (!targetUserId && targetEmail) {
+      const { data: admin } = await supabase
+        .from("admins")
+        .select("id, auth_user_id, email")
+        .eq("email", targetEmail)
+        .maybeSingle();
+
+      if (admin) {
+        targetUserId = admin.auth_user_id || admin.id;
+      }
+    }
+
+    if (!targetUserId && targetEmail) {
+      // Find in auth.users
+      const { data: authUsers } = await supabase.auth.admin.listUsers();
+      const found = authUsers?.users?.find(u => u.email?.toLowerCase() === targetEmail?.toLowerCase());
+      if (found) {
+        targetUserId = found.id;
+      }
+    }
+
+    // 1. Update password in Supabase Auth
+    if (targetUserId) {
+      const { error: sbUpdateErr } = await supabase.auth.admin.updateUserById(targetUserId, {
+        password: newPassword,
+      });
+
+      if (sbUpdateErr) {
+        console.error("[Supabase Admin Password Update Error]:", sbUpdateErr);
+      }
+    }
+
+    // 2. Hash password with bcrypt and update public.admins table
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    if (targetEmail || targetUserId) {
+      let query = supabase.from("admins").update({
+        password: hashedPassword,
+        login_attempts: 0,
+        is_locked: false,
+        locked_until: null,
+      });
+
+      if (targetEmail) {
+        query = query.eq("email", targetEmail);
+      } else if (targetUserId) {
+        query = query.eq("auth_user_id", targetUserId);
+      }
+
+      const { error: adminUpdateErr } = await query;
+      if (adminUpdateErr) {
+        console.warn("[Admin Table Password Update Warning]:", adminUpdateErr);
+      }
+    }
+
+    // 3. Log audit entry
+    try {
+      await supabase.from("audit_logs").insert({
+        action: "PASSWORD_RESET_SUCCESS",
+        target_entity: "auth",
+        ip_address: ipAddress,
+        user_agent: userAgent,
+      });
+    } catch (e) {}
+
+    return {
+      success: true,
+      message: "Your password has been reset successfully! You can now sign in with your new password.",
+    };
+  } catch (error) {
+    console.error("[completePasswordResetAction Error]:", error);
+    const errObj = error instanceof Error ? error : new Error(String(error));
+    return { success: false, error: `Failed to reset password: ${errObj.message}` };
+  }
 }

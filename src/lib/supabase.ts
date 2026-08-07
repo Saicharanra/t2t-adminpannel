@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
@@ -13,6 +12,7 @@ export function createBrowserClient() {
 
 // 2. Server Action & Route Handler Client (read/write cookies)
 export async function createServerClient() {
+  const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
 
   return createClient(supabaseUrl, supabaseAnonKey, {

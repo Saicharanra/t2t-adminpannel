@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase";
 import { sendOtpEmail } from "@/lib/email";
-import { parseUserAgent } from "@/lib/auth-crypto";
+import { parseUserAgent, hashOtp } from "@/lib/auth-crypto";
 import crypto from "crypto";
 import { z } from "zod";
 
@@ -34,10 +34,6 @@ export async function POST(request: Request) {
 
     if (countError) {
       console.error("[OTP Send Route - Rate Limit Check DB Error]:", countError);
-      return NextResponse.json(
-        { success: false, error: `Database error checking rate limit: ${countError.message}` },
-        { status: 500 }
-      );
     }
 
     if (recentCount !== null && recentCount >= 2) {
@@ -49,30 +45,26 @@ export async function POST(request: Request) {
 
     // Generate 6-digit code
     const code = crypto.randomInt(100000, 1000000).toString();
+    const otpHash = hashOtp(code);
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 mins expiry
 
-    // Mark previous unused OTPs for this email as used/inactive
-    const { error: markInactiveError } = await supabase
-      .from("otp_codes")
-      .update({ used: true })
-      .eq("email", email)
-      .eq("used", false);
-
-    if (markInactiveError) {
-      console.error("[OTP Send Route - Mark Inactive DB Error]:", markInactiveError);
-      return NextResponse.json(
-        { success: false, error: `Database error clearing previous OTPs: ${markInactiveError.message}` },
-        { status: 500 }
-      );
-    }
+    // Mark previous unused OTPs for this email as used
+    try {
+      await supabase
+        .from("otp_codes")
+        .update({ is_used: true })
+        .eq("email", email)
+        .eq("is_used", false);
+    } catch (e) {}
 
     // Create new OTP code record in database
     const { error: insertError } = await supabase
       .from("otp_codes")
       .insert({
         email,
-        code,
+        code: otpHash,
         expires_at: expiresAt,
+        is_used: false,
       });
 
     if (insertError) {

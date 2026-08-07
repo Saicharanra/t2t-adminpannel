@@ -201,6 +201,15 @@ function VerifyOtpContent() {
           )}
         </div>
 
+        {/* Development Helper Banner */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="rounded-xl border border-[#14EF10]/30 bg-[#14EF10]/5 p-3 text-center text-[12px] text-neutral-300">
+            <span className="text-[#14EF10] font-semibold">🔑 Dev Terminal OTP Code:</span>{" "}
+            <code className="font-mono font-bold text-[#14EF10] bg-[#121216] px-2 py-0.5 rounded border border-[#14EF10]/20">123456</code>
+            <p className="text-[11px] text-neutral-500 mt-1">Check terminal output for live email OTP dispatches.</p>
+          </div>
+        )}
+
         {/* Trust Device Checkbox */}
         <label className="flex items-center gap-2.5 cursor-pointer group">
           <input

@@ -14,6 +14,26 @@ export default function AnalyticsPage() {
         </div>
       </PageHeader>
 
+      {/* Carbon Impact Banner */}
+      <div className="rounded-2xl border border-[#14EF10]/30 bg-gradient-to-r from-[#0D160D] via-[#0A0A0C] to-[#0D160D] p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#14EF10]/15 text-[11px] font-bold text-[#14EF10] border border-[#14EF10]/20 mb-2">
+            🌱 Carbon Impact & Sustainability
+          </span>
+          <h2 className="text-lg font-extrabold text-white">Ecological Carbon Footprint & Offset Dashboard</h2>
+          <p className="text-xs text-neutral-400 mt-1 max-w-xl">
+            Track real-time CO₂ emissions prevented, equivalent trees planted, clean energy preserved, and material recycling benchmarks.
+          </p>
+        </div>
+
+        <a
+          href="/carbon-impact"
+          className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-xl bg-[#14EF10] text-black font-bold text-xs hover:bg-[#10d00d] transition-all shadow-[0_0_15px_rgba(20,239,16,0.3)] shrink-0 self-start md:self-auto"
+        >
+          View Carbon Dashboard →
+        </a>
+      </div>
+
       {/* Chart Grid */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {[

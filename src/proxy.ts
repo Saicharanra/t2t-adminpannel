@@ -8,7 +8,8 @@ export function proxy(request: NextRequest) {
   const isAuthPage =
     pathname.startsWith("/login") ||
     pathname.startsWith("/verify-otp") ||
-    pathname.startsWith("/forgot-password");
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password");
 
   const isStaticAsset =
     pathname.startsWith("/_next") ||

@@ -8,6 +8,7 @@ import * as zod from "zod";
 import { Mail, Loader2, ArrowLeft, CheckCircle, Leaf, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { requestPasswordResetAction } from "../actions";
 
 const forgotPasswordSchema = zod.object({
   email: zod.string().email("Invalid administrator email address"),
@@ -31,10 +32,16 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (data: ForgotPasswordValues) => {
     setLoading(true);
     try {
-      setSubmitted(true);
-      toast.success("Password reset instructions sent to your email!");
+      const res = await requestPasswordResetAction(data.email);
+      if (res.success) {
+        setSubmitted(true);
+        toast.success(res.message || "Password reset instructions sent to your email!");
+      } else {
+        toast.error(res.error || "Failed to process request");
+      }
     } catch (error) {
-      toast.error("Failed to process request");
+      console.error("[ForgotPassword Submit Error]:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }

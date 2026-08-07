@@ -4,7 +4,7 @@ import crypto from "crypto";
  * Hashes an OTP code using SHA-256 so plain-text codes are never stored in the database.
  */
 export function hashOtp(code: string): string {
-  return crypto.createHash("sha256").update(code.trim()).digest("hex");
+  return crypto.createHash("sha256").update(code.trim()).digest("hex").substring(0, 10);
 }
 
 /**

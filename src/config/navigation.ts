@@ -60,6 +60,12 @@ export const navigation: NavGroup[] = [
         icon: "BarChart3",
         shortcut: "⌘A",
       },
+      {
+        title: "Carbon Impact",
+        href: "/carbon-impact",
+        icon: "Leaf",
+        shortcut: "⌘C",
+      },
     ],
   },
   {
@@ -72,6 +78,12 @@ export const navigation: NavGroup[] = [
   {
     label: "System",
     items: [
+      {
+        title: "Audit Logs",
+        href: "/audit-logs",
+        icon: "ScrollText",
+        shortcut: "⌘L",
+      },
       {
         title: "Settings",
         href: "/settings",
@@ -91,7 +103,9 @@ export const iconMap: Record<string, React.ComponentType<{ className?: string }>
   Gift: Gift,
   FileText: FileText,
   BarChart3: ChartBar,
+  Leaf: ChartBar,
   HeadphonesIcon: Headset,
   Bell: Bell,
+  ScrollText: FileText,
   Settings: Gear,
 };
